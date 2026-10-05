@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head><title>Plasma</title><style>body{margin:0;background:#000}canvas{width:100%;height:100%}</style></head>
+<body><canvas id="c" width="320" height="240"></canvas>
+<script>
+const c = document.getElementById('c'), gl = c.getContext('webgl');
+const vs = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
+const fs = `precision mediump float;
+uniform vec2 uRes; uniform float uTime;
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes * 4.0;
+  float v = sin(uv.x + uTime) + sin(uv.y + uTime * 0.7) + sin((uv.x + uv.y) * 0.7 + uTime * 1.3);
+  vec3 col = 0.5 + 0.5 * cos(vec3(0.0, 2.1, 4.2) + v * 1.5);
+  gl_FragColor = vec4(col, 1.0);
+}`;
+function S(t, s) { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
+  if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(o)); return o; }
+const pr = gl.createProgram(); gl.attachShader(pr, S(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, S(gl.FRAGMENT_SHADER, fs));
+gl.linkProgram(pr); gl.useProgram(pr);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const uRes = gl.getUniformLocation(pr, 'uRes'), uTime = gl.getUniformLocation(pr, 'uTime');
+(function loop(t) {
+  gl.uniform2f(uRes, c.width, c.height); gl.uniform1f(uTime, t * 0.001);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(loop);
+})(0);
+</script></body></html>

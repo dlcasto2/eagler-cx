@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html><head><title>Lit torus</title><style>body{margin:0;background:#111}</style></head>
+<body><canvas id="c" width="320" height="240"></canvas>
+<script>
+const c = document.getElementById('c'), gl = c.getContext('webgl');
+const vs = `
+attribute vec3 aPos; attribute vec3 aNrm;
+uniform mat4 uProj, uView;
+varying vec3 vCol;
+const vec3 L = vec3(0.577, 0.577, 0.577);
+void main() {
+  vec3 n = normalize((uView * vec4(aNrm, 0.0)).xyz);
+  float d = max(dot(n, L), 0.0);
+  vec3 h = normalize(L + vec3(0.0, 0.0, 1.0));
+  float s = pow(max(dot(n, h), 0.0), 16.0);
+  vCol = vec3(0.1, 0.12, 0.2) + vec3(0.9, 0.5, 0.2) * d + vec3(s);
+  gl_Position = uProj * uView * vec4(aPos, 1.0);
+}`;
+const fs = `precision mediump float; varying vec3 vCol; void main(){ gl_FragColor = vec4(vCol, 1.0); }`;
+function S(t, s) { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(o)); return o; }
+const pr = gl.createProgram(); gl.attachShader(pr, S(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, S(gl.FRAGMENT_SHADER, fs));
+gl.linkProgram(pr); gl.useProgram(pr);
+const R = 1, r = 0.4, NU = 20, NV = 10, pos = [], nrm = [], idx = [];
+for (let i = 0; i <= NU; i++) for (let j = 0; j <= NV; j++) {
+  const u = i / NU * Math.PI * 2, v = j / NV * Math.PI * 2;
+  const cx = Math.cos(u), sx = Math.sin(u), cv = Math.cos(v), sv = Math.sin(v);
+  pos.push((R + r * cv) * cx, (R + r * cv) * sx, r * sv); nrm.push(cv * cx, cv * sx, sv);
+}
+for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+  const a = i * (NV + 1) + j, b = a + NV + 1; idx.push(a, b, a + 1, b, b + 1, a + 1);
+}
+function buf(tgt, d) { const b = gl.createBuffer(); gl.bindBuffer(tgt, b); gl.bufferData(tgt, d, gl.STATIC_DRAW); return b; }
+const pb = buf(gl.ARRAY_BUFFER, new Float32Array(pos)); const la = gl.getAttribLocation(pr, 'aPos');
+gl.enableVertexAttribArray(la); gl.vertexAttribPointer(la, 3, gl.FLOAT, false, 0, 0);
+const nb = buf(gl.ARRAY_BUFFER, new Float32Array(nrm)); const ln = gl.getAttribLocation(pr, 'aNrm');
+gl.enableVertexAttribArray(ln); gl.vertexAttribPointer(ln, 3, gl.FLOAT, false, 0, 0);
+buf(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx));
+const t = 1 / Math.tan(0.5), a = c.width / c.height, n = 0.1, f = 50;
+gl.uniformMatrix4fv(gl.getUniformLocation(pr, 'uProj'), false, [t/a,0,0,0, 0,t,0,0, 0,0,(f+n)/(n-f),-1, 0,0,2*f*n/(n-f),0]);
+const uView = gl.getUniformLocation(pr, 'uView');
+gl.enable(gl.DEPTH_TEST);
+(function loop(time) {
+  const ax = time * 0.0006, ay = time * 0.0009, cx = Math.cos(ax), sx = Math.sin(ax), cy = Math.cos(ay), sy = Math.sin(ay);
+  gl.uniformMatrix4fv(uView, false, [cy, sx*sy, -cx*sy, 0,  0, cx, sx, 0,  sy, -sx*cy, cx*cy, 0,  0, 0, -3.5, 1]);
+  gl.clearColor(0.07, 0.07, 0.07, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
+  requestAnimationFrame(loop);
+})(0);
+</script></body></html>

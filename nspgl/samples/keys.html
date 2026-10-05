@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head><title>Keyboard + mouse</title>
+<style>body{margin:0;background:#102}#t{position:fixed;left:4px;top:2px;color:#ff0;font-size:10px}</style></head>
+<body><canvas id="c" width="320" height="240"></canvas><div id="t">arrows move, touchpad aims</div>
+<script>
+const c = document.getElementById('c'), gl = c.getContext('webgl'), info = document.getElementById('t');
+const pr = gl.createProgram();
+function S(t, s) { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); gl.attachShader(pr, o); }
+S(gl.VERTEX_SHADER, 'attribute vec2 p; uniform vec2 off; uniform float s; void main(){ gl_Position = vec4(p*s+off, 0.0, 1.0); gl_PointSize = 6.0; }');
+S(gl.FRAGMENT_SHADER, 'precision mediump float; uniform vec3 col; void main(){ gl_FragColor = vec4(col, 1.0); }');
+gl.linkProgram(pr); gl.useProgram(pr);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const U = n => gl.getUniformLocation(pr, n);
+const keys = {}; let x = 0, y = 0, mx = 0, my = 0, last = '';
+addEventListener('keydown', e => { keys[e.key] = true; last = e.key + ' (' + e.code + ')'; });
+addEventListener('keyup', e => { keys[e.key] = false; });
+c.addEventListener('mousemove', e => { mx = e.offsetX / c.clientWidth * 2 - 1; my = 1 - e.offsetY / c.clientHeight * 2; });
+let prev = 0;
+function frame(t) {
+  const dt = Math.min((t - prev) / 1000, 0.1); prev = t;
+  if (keys.ArrowLeft) x -= dt; if (keys.ArrowRight) x += dt;
+  if (keys.ArrowUp) y += dt; if (keys.ArrowDown) y -= dt;
+  gl.clearColor(0.06, 0.02, 0.12, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(U('off'), x, y); gl.uniform1f(U('s'), 0.1); gl.uniform3f(U('col'), 0.2, 0.9, 0.4);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.uniform2f(U('off'), mx, my); gl.uniform1f(U('s'), 0.02); gl.uniform3f(U('col'), 1, 0.3, 0.2);
+  gl.drawArrays(gl.POINTS, 0, 1);
+  info.textContent = 'last key: ' + last + '  pos ' + x.toFixed(2) + ',' + y.toFixed(2);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script></body></html>
