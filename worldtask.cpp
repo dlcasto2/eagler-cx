@@ -2,6 +2,13 @@
 
 #include "worldtask.h"
 
+#include "player_motion.h"
+#include "entity.h"
+#include "stresstest.h"
+#include "platform_time.h"
+#include "lighting.h"
+#include "gamestate.h"
+
 #include "aabb.h"
 #include "blockrenderer.h"
 #include "blocklisttask.h"
@@ -50,96 +57,10 @@ GLFix WorldTask::speed()
 
 void WorldTask::logic()
 {
-    GLFix dx = 0, dz = 0;
-
-    if(keyPressed(KEY_NSPIRE_8)) //Forward
-    {
-        GLFix dx1, dz1;
-        getForward(&dx1, &dz1);
-
-        dx += dx1;
-        dz += dz1;
-    }
-    else if(keyPressed(KEY_NSPIRE_2)) //Backward
-    {
-        GLFix dx1, dz1;
-        getForward(&dx1, &dz1);
-
-        dx -= dx1;
-        dz -= dz1;
-    }
-
-    if(keyPressed(KEY_NSPIRE_4)) //Left
-    {
-        GLFix dx1, dz1;
-        getRight(&dx1, &dz1);
-
-        dx -= dx1;
-        dz -= dz1;
-    }
-    else if(keyPressed(KEY_NSPIRE_6)) //Right
-    {
-        GLFix dx1, dz1;
-        getRight(&dx1, &dz1);
-
-        dx += dx1;
-        dz += dz1;
-    }
-
-    if(!world.intersect(aabb))
-    {
-        AABB aabb_moved = aabb;
-        aabb_moved.low_x += dx;
-        aabb_moved.high_x += dx;
-
-        if(!world.intersect(aabb_moved))
-        {
-            x += dx;
-            aabb = aabb_moved;
-        }
-
-        aabb_moved = aabb;
-        aabb_moved.low_z += dz;
-        aabb_moved.high_z += dz;
-
-        if(!world.intersect(aabb_moved))
-        {
-            z += dz;
-            aabb = aabb_moved;
-        }
-
-        aabb_moved = aabb;
-        aabb_moved.low_y += vy;
-        aabb_moved.high_y += vy;
-
-        can_jump = world.intersect(aabb_moved);
-
-        if(!can_jump)
-        {
-            y += vy;
-            aabb = aabb_moved;
-        }
-        else if(vy > GLFix(0))
-        {
-            can_jump = false;
-            vy = 0;
-        }
-        else
-            vy = 0;
-
-        vy -= 5;
-
-        in_water = getBLOCK(world.getBlock((x / BLOCK_SIZE).floor(), ((y + eye_pos) / BLOCK_SIZE).floor(), (z / BLOCK_SIZE).floor())) == BLOCK_WATER;
-
-        if(in_water)
-            can_jump = true;
-    }
-
-    if(keyPressed(KEY_NSPIRE_5) && can_jump) //Jump
-    {
-        vy = 50;
-        can_jump = false;
-    }
+    // Record this frame's movement intent; tick() applies physics.
+    input_forward = keyPressed(KEY_NSPIRE_8) ? 1 : (keyPressed(KEY_NSPIRE_2) ? -1 : 0);
+    input_strafe = keyPressed(KEY_NSPIRE_6) ? 1 : (keyPressed(KEY_NSPIRE_4) ? -1 : 0);
+    input_jump = keyPressed(KEY_NSPIRE_5);
 
     if(has_touchpad)
     {
@@ -254,7 +175,7 @@ void WorldTask::logic()
             return;
 
         BLOCK_WDATA current_block = world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z),
-                    block_to_place = current_inventory.currentSlot();
+                    block_to_place = current_inventory.currentBlock();
 
         // When placing fluid onto a non-full fluid block of the same type, "fill" it
         if(current_block != block_to_place
@@ -391,6 +312,57 @@ void WorldTask::logic()
     }
 }
 
+void WorldTask::tick()
+{
+    // Build the physics box from the current position, run one tick, read it back.
+    AABB box{x - player_width/2, y, z - player_width/2, x + player_width/2, y + player_height, z + player_width/2};
+
+    PlayerMotion motion;
+    motion.vy = vy;
+    motion.on_ground = can_jump;
+
+    const bool head_in_water = getBLOCK(world.getBlock((x / BLOCK_SIZE).floor(), ((y + eye_pos) / BLOCK_SIZE).floor(), (z / BLOCK_SIZE).floor())) == BLOCK_WATER;
+    in_water = head_in_water;
+
+    const GLFix walk = velocityPerTick(speed(), V13_FPS);
+    const bool auto_jump = settings_task.getValue(SettingsTask::AUTO_JUMP) != 0;
+
+    playerTick(world_collision, box, motion, PlayerInput{input_forward, input_strafe, input_jump}, yr, walk, head_in_water, auto_jump);
+
+    x = (box.low_x + box.high_x) / 2;
+    y = box.low_y;
+    z = (box.low_z + box.high_z) / 2;
+    vy = motion.vy;
+    can_jump = motion.on_ground;
+
+    world.setPosition(x, y, z);
+
+    entity_pool.tick(world_collision);
+
+    world_state.time_of_day = (world_state.time_of_day + 1) % 24000;
+
+    #ifdef STRESS_TEST
+        if(!stress_spawned)
+        {
+            spawnStressDummies(entity_pool, x, y, z, 12345);
+            stress_spawned = true;
+        }
+        ++stress_tick_count;
+        entity_pool.forEach([this](Entity &e){ stressSteer(e, stress_tick_count, 999); });
+        world.setBrightnessAll(stressBrightnessForTick(stress_tick_count));
+
+        // TPS over the last full RTC second.
+        const uint32_t now = platformRtcSeconds();
+        if(now != stress_rtc_second)
+        {
+            stress_tps = stress_ticks_this_second;
+            stress_ticks_this_second = 0;
+            stress_rtc_second = now;
+        }
+        ++stress_ticks_this_second;
+    #endif
+}
+
 void WorldTask::render()
 {
     aabb = {x - player_width/2, y, z - player_width/2, x + player_width/2, y + player_height, z + player_width/2};
@@ -410,6 +382,8 @@ void WorldTask::render()
     glBindTexture(terrain_current);
 
     world.render();
+
+    renderEntities(entity_pool);
 
     //Draw indication
     glBindTexture(&blockselection);
@@ -497,7 +471,7 @@ void WorldTask::render()
     if(draw_inventory)
     {
         current_inventory.draw(*screen);
-        drawStringCenter(global_block_renderer.getName(current_inventory.currentSlot()), 0xFFFF, *screen, SCREEN_WIDTH / 2, SCREEN_HEIGHT - current_inventory.height() - fontHeight());
+        drawStringCenter(global_block_renderer.getName(current_inventory.currentBlock()), 0xFFFF, *screen, SCREEN_WIDTH / 2, SCREEN_HEIGHT - current_inventory.height() - fontHeight());
     }
 
     if(message_timeout > 0)
@@ -514,6 +488,13 @@ void WorldTask::render()
         }
     #endif
 
+    #ifdef STRESS_TEST
+        snprintf(this->message, sizeof(this->message), "FPS %u | TPS %u | ents %d | light %d | tex %uKB",
+                 fps, stress_tps, entity_pool.count(), stressBrightnessForTick(stress_tick_count),
+                 static_cast<unsigned>(lightingMemoryBytes() / 1024));
+        drawString(this->message, 0xFFFF, *screen, 2, 5);
+    #endif
+
     frame_counter++;
 }
 
@@ -524,6 +505,7 @@ void WorldTask::resetWorld()
     xr = yr = 0;
     world.generateSeed();
     world.clear();
+    current_inventory.resetToDefaults();
 }
 
 void WorldTask::setMessage(const char *message)

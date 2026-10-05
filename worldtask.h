@@ -12,6 +12,7 @@ public:
     virtual void makeCurrent() override;
 
     virtual void logic() override;
+    virtual void tick() override;
     virtual void render() override;
 
     void resetWorld();
@@ -38,6 +39,14 @@ private:
     int tp_last_x = 0, tp_last_y = 0;
     GLFix vy = 0; //Y-Velocity for gravity and jumps
     bool in_water = false;
+
+    int8_t input_forward = 0, input_strafe = 0; //Set by logic(), used by tick()
+    bool input_jump = false;
+
+    #ifdef STRESS_TEST
+        bool stress_spawned = false;
+        uint32_t stress_tick_count = 0, stress_tps = 0, stress_ticks_this_second = 0, stress_rtc_second = 0;
+    #endif
 
     static constexpr unsigned int blockselection_frames = 2;
     unsigned int blockselection_frame = 0, blockselection_frame_fraction = 0;
