@@ -193,7 +193,7 @@ void BlockListTask::logic()
     }
     else if(keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_CLICK))
     {
-        current_inventory.currentSlot() = user_selectable[current_selection];
+        current_inventory.setCurrentBlock(user_selectable[current_selection]);
 
         key_held_down = true;
     }

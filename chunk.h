@@ -1,6 +1,7 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
+#include "lighting.h"
 #include <cstdint>
 #include <vector>
 #include <tuple>
@@ -20,6 +21,7 @@ public:
     Chunk(int x, int y, int z);
     void logic(bool ticks_enabled);
     void render();
+    void setBrightness(int level) { brightness = level; }
     void setDirty(bool dirty = true) { render_dirty = dirty; }
     bool isDirty() { return render_dirty; }
     BLOCK_WDATA getLocalBlock(const int x, const int y, const int z) const;
@@ -84,6 +86,7 @@ public:
     const int x, y, z;
 
 private:
+    int brightness = BRIGHTNESS_LEVELS - 1;
     //Terrain generation
     void makeTree(unsigned int x, unsigned int y, unsigned int z);
 

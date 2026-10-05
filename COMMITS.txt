@@ -1,0 +1,14 @@
+4ea7da5 feat: stress-test build with entity, darkness and tick readout
+47b66a0 feat: darkened terrain copies selected per chunk
+f3a777e feat: auto-jump with a settings switch
+59070bb feat: player physics and entities run on 20 tps game ticks
+c8a200c feat: save version 7 with backup, safe replace and v6 import
+d20aaea feat: player and world state, difficulty rules
+6e97144 feat: typed save I/O, block storage and item piles
+66b9f46 feat: shared collision physics, auto-jump rule, 32-slot entity pool
+0a5c5e7 feat: 36-slot player inventory behind the creative hotbar
+ec60d48 feat: block hardness, tools, drops and light table
+4ede179 feat: item IDs, stacks and 1.8.8 item stats
+1610d22 feat: 20 tps game clock and platform timer
+871556e build: calculator CI and stress variant
+5f304b4 build: host test harness and headless PC run

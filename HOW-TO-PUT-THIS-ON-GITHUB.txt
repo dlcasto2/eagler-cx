@@ -1,0 +1,44 @@
+Crafti Survival Edition — full project snapshot
+===============================================
+
+This zip is the ENTIRE Crafti project at the survival-foundation branch
+tip: Crafti v1.3 plus all 14 foundation commits, as plain files (153
+files). It is NOT a git bundle — it's the actual source tree, so you can
+look at it, build it, or push it fresh.
+
+Why you might have had trouble before
+-------------------------------------
+The .bundle file needs git commands to unpack, and a repo that already
+has Crafti's history (commit b71390f). If your repo was empty, or the
+"git fetch <bundle>" step didn't run, the branch never appeared. This
+snapshot sidesteps all of that: it's just the files.
+
+Easiest way to get this onto github.com/dlcasto6/crafti
+-------------------------------------------------------
+This replaces whatever is in your repo with a clean, correct copy.
+
+  1. Unzip this folder somewhere.
+  2. Open a terminal in the unzipped "crafti" folder.
+  3. Run these commands (uses YOUR repo URL):
+
+     git init
+     git add .
+     git commit -m "Crafti Survival Edition: foundation (Plan 1)"
+     git branch -M survival-foundation
+     git remote add origin https://github.com/dlcasto6/crafti.git
+     git push -u origin survival-foundation --force
+
+  The --force is safe here: it makes your repo match this snapshot.
+
+After it pushes
+---------------
+Go to the repo's Actions tab. The "Calculator build" workflow runs on
+push and produces crafti.tns and crafti-stress.tns (artifact
+"crafti-calculator"). The first run builds the toolchain (~40 min, then
+cached). If Actions says workflows are disabled on a fork, click the
+"enable workflows" button, then re-run.
+
+Note: this single-commit snapshot keeps all the CODE but collapses the
+14-commit history into one. If you want the real 14-commit history, use
+the crafti-survival-foundation.bundle instead (see PUSH-INSTRUCTIONS.md
+in the other zip). For building and playing, this snapshot is identical.

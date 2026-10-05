@@ -7,9 +7,16 @@ GCCFLAGS = -O$(OPTIMIZE) -I nGL -I . -Wall -W -marm -ffast-math -mcpu=arm926ej-s
 LDFLAGS = -lm -lz -Wl,--gc-sections
 ZEHNFLAGS = --name "Crafti" --version 13 --author "Fabian Vogt" --notice "3D Minecraft" --compress
 EXE = crafti
-OBJS = $(patsubst %.c, %.o, $(shell find . -name \*.c))
-OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp))
-OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S))
+
+# make STRESS=1 builds the stress-test variant (32 dummies, darkness cycling, readout).
+# Object files are shared between variants: run `make clean-objs` when switching.
+ifeq ($(STRESS),1)
+GCCFLAGS += -D STRESS_TEST
+EXE = crafti-stress
+endif
+OBJS = $(patsubst %.c, %.o, $(shell find . -name \*.c -not -path './tests/*'))
+OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp -not -path './tests/*'))
+OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S -not -path './tests/*'))
 
 all: $(EXE).tns
 
@@ -25,7 +32,10 @@ $(EXE).tns: $(EXE).elf
 	+make-prg $@.zehn $@
 	+rm $@.zehn
 
-.PHONY: clean
+.PHONY: clean clean-objs
+clean-objs:
+	rm -f `find . -name \*.o -not -path './tests/*'`
+
 clean:
-	rm -f `find . -name \*.o`
-	rm -f $(EXE).tns $(EXE).elf
+	rm -f `find . -name \*.o -not -path './tests/*'`
+	rm -f crafti.tns crafti.elf crafti-stress.tns crafti-stress.elf

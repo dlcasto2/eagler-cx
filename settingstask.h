@@ -26,6 +26,7 @@ public:
         NEARPLANE_Z,
         TICKS_ENABLED,
         SHOW_FPS,
+        AUTO_JUMP,
     };
 
     SettingsTask();

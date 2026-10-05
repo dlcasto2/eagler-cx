@@ -4,22 +4,25 @@
 #include "gl.h"
 #include "terrain.h"
 
+// The creative hotbar: a 5-slot view over player_inventory slots 0-4.
+// Phase 2 replaces it with the 9-slot hotbar.
 class Inventory
 {
 public:
-    Inventory();
-
     void draw(TEXTURE &tex);
 
     static unsigned int height();
-    BLOCK_WDATA &currentSlot();
+
+    BLOCK_WDATA currentBlock() const;
+    void setCurrentBlock(BLOCK_WDATA b);
 
     void previousSlot();
     void nextSlot();
 
+    // Today's defaults: stone, grass, planks, torch, flower.
+    void resetToDefaults();
+
     static constexpr int slot_count = 5;
-    BLOCK_WDATA entries[slot_count] = { BLOCK_STONE, BLOCK_GRASS, BLOCK_PLANKS_NORMAL, BLOCK_TORCH, BLOCK_FLOWER };
-    int current_slot = 0;
 };
 
 extern Inventory current_inventory;

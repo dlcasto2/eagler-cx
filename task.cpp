@@ -6,6 +6,8 @@
 #include "worldtask.h"
 #include "settingstask.h"
 #include "inventory.h"
+#include "playerinventory.h"
+#include "gamestate.h"
 
 //The values have to stay somewhere
 Task *Task::current_task;
@@ -76,55 +78,77 @@ void Task::drawBackground()
  * Version 6 (d52f3992): BLOCK_SIZE changed from 120 to 128,
  *                       gzip compression introduced shortly afterwards
  */
-static constexpr int savefile_version = 6;
+static constexpr int savefile_version = 7;
 
 #define LOAD_FROM_FILE(var) if(gzfread(&var, sizeof(var), 1, file) != 1) { gzclose(file); return false; }
 #define SAVE_TO_FILE(var) if(gzfwrite(&var, sizeof(var), 1, file) != 1) { gzclose(file); return false; }
 
-bool Task::load()
+LoadResult Task::load()
 {
-    // Versions before 6 (and 6 for a short time) were uncompressed,
-    // but gzopen detects and handles uncompressed files transparently.
-    // Previous versions read the gzip magic as savefile version and bail out.
     gzFile file = gzopen(savefile, "rb");
     if(!file)
-        return false;
+        return LoadResult::MISSING;
 
     int version;
-    LOAD_FROM_FILE(version);
+    if(gzread(file, &version, sizeof(version)) != sizeof(version))
+    {
+        gzclose(file);
+        return LoadResult::UNREADABLE;
+    }
 
-    static_assert(savefile_version == 6, "Adjust loading code for backward compatibility");
+    static_assert(savefile_version == 7, "Adjust loading code for backward compatibility");
 
-    if(version < 4 || version > 6)
+    if(version < 4 || version > 7)
     {
         printf("Save file version %d not supported!\n", version);
         gzclose(file);
-        return false;
+        return LoadResult::UNREADABLE;
     }
+
+    #define LOAD_OR_FAIL(var) if(gzfread(&var, sizeof(var), 1, file) != 1) { gzclose(file); return LoadResult::UNREADABLE; }
 
     if(!settings_task.loadFromFile(file, version))
     {
         gzclose(file);
-        return false;
+        return LoadResult::UNREADABLE;
     }
 
-    LOAD_FROM_FILE(current_inventory.entries)
-    LOAD_FROM_FILE(world_task.xr)
-    LOAD_FROM_FILE(world_task.yr)
-    LOAD_FROM_FILE(world_task.x)
-    LOAD_FROM_FILE(world_task.y)
-    LOAD_FROM_FILE(world_task.z)
-    // Previous versions used BLOCK_SIZE 120
-    if(version < 6)
+    if(version <= 6)
     {
-        world_task.x = world_task.x * BLOCK_SIZE / 120;
-        world_task.y = world_task.y * BLOCK_SIZE / 120;
-        world_task.z = world_task.z * BLOCK_SIZE / 120;
+        BLOCK_WDATA hotbar[Inventory::slot_count];
+        LOAD_OR_FAIL(hotbar)
+        LOAD_OR_FAIL(world_task.xr)
+        LOAD_OR_FAIL(world_task.yr)
+        LOAD_OR_FAIL(world_task.x)
+        LOAD_OR_FAIL(world_task.y)
+        LOAD_OR_FAIL(world_task.z)
+        if(version < 6)
+        {
+            world_task.x = world_task.x * BLOCK_SIZE / 120;
+            world_task.y = world_task.y * BLOCK_SIZE / 120;
+            world_task.z = world_task.z * BLOCK_SIZE / 120;
+        }
+        int hotbar_slot;
+        LOAD_OR_FAIL(hotbar_slot)
+        convertV6Inventory(hotbar, hotbar_slot, player_inventory, player_state);
+    }
+    else // version 7
+    {
+        LOAD_OR_FAIL(world_task.x)
+        LOAD_OR_FAIL(world_task.y)
+        LOAD_OR_FAIL(world_task.z)
+        LOAD_OR_FAIL(world_task.xr)
+        LOAD_OR_FAIL(world_task.yr)
+
+        SaveReader reader(file);
+        if(!readSurvivalSection(reader))
+        {
+            gzclose(file);
+            return LoadResult::UNREADABLE;
+        }
     }
 
-    LOAD_FROM_FILE(current_inventory.current_slot)
-
-    LOAD_FROM_FILE(block_list_task.current_selection)
+    LOAD_OR_FAIL(block_list_task.current_selection)
 
     const bool ret = world.loadFromFile(file);
 
@@ -132,33 +156,38 @@ bool Task::load()
 
     world.setPosition(world_task.x, world_task.y, world_task.z);
 
-    return ret;
+    #undef LOAD_OR_FAIL
+
+    return ret ? LoadResult::OK : LoadResult::UNREADABLE;
 }
 
 bool Task::save()
 {
-    gzFile file = gzopen(savefile, "wb");
-    if(!file)
-        return false;
+    struct Ctx {} ctx;
 
-    SAVE_TO_FILE(savefile_version)
-    if(!settings_task.saveToFile(file))
-    {
-        gzclose(file);
-        return false;
-    }
-    SAVE_TO_FILE(current_inventory.entries)
-    SAVE_TO_FILE(world_task.xr)
-    SAVE_TO_FILE(world_task.yr)
-    SAVE_TO_FILE(world_task.x)
-    SAVE_TO_FILE(world_task.y)
-    SAVE_TO_FILE(world_task.z)
-    SAVE_TO_FILE(current_inventory.current_slot)
-    SAVE_TO_FILE(block_list_task.current_selection)
+    return replaceSaveSafely(savefile, [](gzFile file, void *) -> bool {
+        const int version = savefile_version;
+        if(gzwrite(file, &version, sizeof(version)) != sizeof(version))
+            return false;
+        if(!settings_task.saveToFile(file))
+            return false;
 
-    const bool ret = world.saveToFile(file);
+        #define SAVE_OR_FAIL(var) if(gzfwrite(&var, sizeof(var), 1, file) != 1) return false;
+        SAVE_OR_FAIL(world_task.x)
+        SAVE_OR_FAIL(world_task.y)
+        SAVE_OR_FAIL(world_task.z)
+        SAVE_OR_FAIL(world_task.xr)
+        SAVE_OR_FAIL(world_task.yr)
+        #undef SAVE_OR_FAIL
 
-    gzclose(file);
+        SaveWriter writer(file);
+        if(!writeSurvivalSection(writer))
+            return false;
 
-    return ret;
+        if(gzfwrite(&block_list_task.current_selection, sizeof(block_list_task.current_selection), 1, file) != 1)
+            return false;
+
+        return world.saveToFile(file);
+    }, &ctx);
+
 }

@@ -2,6 +2,7 @@
 #define TASK_H
 
 #include "gl.h"
+#include "savefile.h"
 
 #include <libndls.h>
 
@@ -12,6 +13,7 @@ public:
 
     virtual void render() = 0;
     virtual void logic() = 0;
+    virtual void tick() {} //Fixed 20/s game tick; only WorldTask overrides it
 
     virtual void makeCurrent();
 
@@ -38,7 +40,7 @@ public:
     static void saveBackground();
     static void drawBackground();
     //Saving and loading
-    static bool load();
+    static LoadResult load();
     static bool save();
     static const char *savefile;
 };

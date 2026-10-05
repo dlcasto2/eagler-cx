@@ -9,6 +9,7 @@
 #include "terrain.h"
 #include "chunk.h"
 #include "perlinnoise.h"
+#include "physics.h"
 
 struct BLOCK_CHANGE {
     int chunk_x, chunk_y, chunk_z, local_x, local_y, local_z;
@@ -34,6 +35,7 @@ public:
     bool loadFromFile(gzFile file);
     bool saveToFile(gzFile file) const;
     void render();
+    void setBrightnessAll(int level); //Phase 5 replaces this with per-chunk light
     int fieldOfView() const { return field_of_view; }
     void setFieldOfView(int fov) { field_of_view = fov; loaded = false; }
     Chunk *findChunk(int x, int y, int z) const;
@@ -59,5 +61,14 @@ private:
 };
 
 extern World world;
+
+// Lets shared physics code ask the world about collisions.
+class WorldCollision : public CollisionQuery
+{
+public:
+    bool intersects(const AABB &box) const override;
+};
+
+extern WorldCollision world_collision;
 
 #endif // WORLD_H

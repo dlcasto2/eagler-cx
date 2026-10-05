@@ -5,6 +5,7 @@
 
 #include "world.h"
 #include "chunk.h"
+#include "lighting.h"
 #include "fastmath.h"
 #include "blockrenderer.h"
 
@@ -177,6 +178,16 @@ void Chunk::buildGeometry()
     debug("Done!\n");
 }
 
+// nglPerspective divides by the integer part of z. A culling corner at the
+// camera's own depth would divide by zero: ARM returns 0, x86 traps.
+static void cullPerspective(VECTOR3 *v)
+{
+    if(v->z.toInteger<int>() == 0)
+        v->z = GLFix(1);
+
+    nglPerspective(v);
+}
+
 static bool behindClip(const VECTOR3 &v1)
 {
     return (transformation->data[2][0]*v1.x + transformation->data[2][1]*v1.y + transformation->data[2][2]*v1.z + transformation->data[2][3]) <= GLFix(CLIP_PLANE);
@@ -249,14 +260,14 @@ void Chunk::render()
     nglMultMatVectRes(transformation, &v7, &v15);
     nglMultMatVectRes(transformation, &v8, &v16);
 
-    nglPerspective(&v9);
-    nglPerspective(&v10);
-    nglPerspective(&v11);
-    nglPerspective(&v12);
-    nglPerspective(&v13);
-    nglPerspective(&v14);
-    nglPerspective(&v15);
-    nglPerspective(&v16);
+    cullPerspective(&v9);
+    cullPerspective(&v10);
+    cullPerspective(&v11);
+    cullPerspective(&v12);
+    cullPerspective(&v13);
+    cullPerspective(&v14);
+    cullPerspective(&v15);
+    cullPerspective(&v16);
 
     //X and Y-Culling
 
@@ -277,10 +288,10 @@ void Chunk::render()
     glBindTexture(nullptr);
     nglDrawArray(vertices_color.data(), vertices_color.size(), positions.data(), positions.size(), positions_processed.data(), GL_QUADS, true);
 
-    glBindTexture(terrain_quad);
+    glBindTexture(terrainQuadAtLevel(brightness));
     nglDrawArray(vertices_quad.data(), vertices_quad.size(), positions.data(), positions.size(), positions_processed.data(), GL_QUADS, false);
 
-    glBindTexture(terrain_current);
+    glBindTexture(terrainAtLevel(brightness));
     nglDrawArray(vertices.data(), vertices.size(), positions.data(), positions.size(), positions_processed.data(), GL_QUADS, false);
 
     const VERTEX *ve = vertices_unaligned.data();

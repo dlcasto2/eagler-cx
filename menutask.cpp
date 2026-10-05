@@ -105,7 +105,7 @@ void MenuTask::logic()
             break;
 
         case LOAD_WORLD:
-            if(load())
+            if(load() == LoadResult::OK)
                 world_task.setMessage("World loaded.");
             else
                 world_task.setMessage("World failed to load.");

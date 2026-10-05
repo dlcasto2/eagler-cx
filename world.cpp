@@ -333,3 +333,17 @@ Chunk* World::generateChunk(int x, int y, int z)
 
     return c;
 }
+
+WorldCollision world_collision;
+
+bool WorldCollision::intersects(const AABB &box) const
+{
+    AABB copy = box;   // World::intersect takes a non-const reference
+    return world.intersect(copy);
+}
+
+void World::setBrightnessAll(int level)
+{
+    for(Chunk *c : visible_chunks)
+        c->setBrightness(level);
+}
