@@ -26,5 +26,15 @@
            run: make -j$(nproc)
          - working-directory: crafti
            run: make -j$(nproc) && make clean-objs && make STRESS=1 -j$(nproc)
-         - uses: actions/upload-artifact@v4
+         - name: Check the .tns files
+        working-directory: crafti
+        run: |
+          for f in *.tns; do
+            size=$(stat -c %s "$f")
+            head=$(head -c 4 "$f" | od -An -c | tr -s ' ')
+            sum=$(sha256sum "$f" | cut -c1-16)
+            echo "::notice title=$f::size=$size bytes, starts with [$head], sha256=$sum"
+            if [ "$(head -c 3 "$f")" != "PRG" ]; then echo "::error title=$f::not an Ndless program"; exit 1; fi
+          done
+      - uses: actions/upload-artifact@v4
            with: { name: crafti-calculator, path: "crafti/*.tns" }
