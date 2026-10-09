@@ -46,8 +46,8 @@ void HelpTask::render()
         y += 13;
     }
 
-    drawPixelTextCenter(*screen, "Crafti by Fabian Vogt - Survival Edition fork", SCREEN_WIDTH / 2, y + 4, ui::GREY_TEXT + 0x2104, false);
-    drawPixelTextCenter(*screen, "Block textures: PureBDcraft (bdcraft.net)", SCREEN_WIDTH / 2, y + 14, ui::GREY_TEXT + 0x2104, false);
+    drawPixelTextCenter(*screen, "Crafti by Fabian Vogt - Survival Edition fork", SCREEN_WIDTH / 2, y + 4, ui::GREY_TEXT, false);
+    drawPixelTextCenter(*screen, "Block textures: PureBDcraft (bdcraft.net)", SCREEN_WIDTH / 2, y + 14, ui::GREY_TEXT, false);
 
     drawButton(*screen, (SCREEN_WIDTH - 200) / 2, SCREEN_HEIGHT - 26, 200, 20, "Done", true);
 }

@@ -12,7 +12,7 @@ constexpr int SLOT = 18, SLOT_INNER = 16;
 constexpr int TEXT_LINE = 10;   // line height of the pixel font
 
 namespace ui {
-    constexpr COLOR TEXT_WHITE = 0xFFFF, TEXT = 0xE71C, YELLOW = 0xFFF4, GREY_TEXT = 0x52AA, DARK_TEXT = 0x4208,
+    constexpr COLOR TEXT_WHITE = 0xFFFF, TEXT = 0xE71C, YELLOW = 0xFFF4, GREY_TEXT = 0xA534, DARK_TEXT = 0x4208,
                     TITLE = 0xFE60;
 }
 

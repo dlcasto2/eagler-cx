@@ -95,7 +95,7 @@ void SettingsTask::render()
         drawButton(*screen, x, y, row_width, row_height, label, i == current_selection, enabled);
     }
 
-    drawPixelText(*screen, "8/2 move   4/6 change   esc done", 3, SCREEN_HEIGHT - 11, ui::GREY_TEXT, false);
+    drawPixelText(*screen, "8/2 move   4/6 change   esc done", 3, SCREEN_HEIGHT - 11, ui::GREY_TEXT);
 }
 
 void SettingsTask::close()

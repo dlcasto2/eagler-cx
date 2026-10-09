@@ -53,7 +53,7 @@ void MenuTask::render()
     for(int i = 0; i < MENU_ITEM_MAX; ++i)
         drawButton(*screen, x, BUTTONS_Y + i * (BUTTON_H + BUTTON_GAP), BUTTON_W, BUTTON_H, labels[order[i]], order[i] == menu_selected_item);
 
-    drawPixelText(*screen, "8/2 move   5 select   menu back", 3, SCREEN_HEIGHT - 11, ui::GREY_TEXT, false);
+    drawPixelText(*screen, "8/2 move   5 select   menu back", 3, SCREEN_HEIGHT - 11, ui::GREY_TEXT);
 }
 
 void MenuTask::logic()

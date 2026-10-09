@@ -345,7 +345,7 @@ void drawItemStack(TEXTURE &dst, int x, int y, const ItemStack &s)
     {
         char buf[4];
         snprintf(buf, sizeof(buf), "%u", static_cast<unsigned>(s.count));
-        drawPixelText(dst, buf, x + 17 - pixelTextWidth(buf), y + 9, 0xFFFF);
+        drawPixelText(dst, buf, x + 16 - pixelTextWidth(buf), y + 8, 0xFFFF);
     }
 }
 
