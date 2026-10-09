@@ -1,29 +1,38 @@
 #include "menutask.h"
 
-#include "texturetools.h"
-#include "worldtask.h"
+#include "gui_art.h"
 #include "helptask.h"
 #include "settingstask.h"
-
-#include "textures/menu.h"
-#include "textures/selection.h"
+#include "uikit.h"
+#include "worldtask.h"
 
 MenuTask menu_task;
 
-MenuTask::MenuTask()
+namespace {
+
+const char *const labels[MenuTask::MENU_ITEM_MAX] = {
+    "New World", "Load World", "Save World", "Options...", "Quit without Saving", "Help & Controls"
+};
+
+// Buttons in the order they're shown, top to bottom.
+const int order[MenuTask::MENU_ITEM_MAX] = {
+    MenuTask::SAVE_WORLD, MenuTask::LOAD_WORLD, MenuTask::NEW_WORLD, MenuTask::SETTINGS, MenuTask::HELP, MenuTask::EXIT
+};
+
+int positionOf(int item)
 {
-     menu_with_selection = newTexture(menu.width, menu.height);
+    for(int i = 0; i < MenuTask::MENU_ITEM_MAX; ++i)
+        if(order[i] == item)
+            return i;
+    return 0;
 }
 
-MenuTask::~MenuTask()
-{
-    deleteTexture(menu_with_selection);
-}
+constexpr int BUTTON_W = 200, BUTTON_H = 20, BUTTON_GAP = 4, BUTTONS_Y = 68;
+
+} // namespace
 
 void MenuTask::makeCurrent()
 {
-    menu_open = true;
-    menu_width_visible = 0;
     menu_selected_item = SAVE_WORLD;
 
     if(!background_saved)
@@ -35,73 +44,45 @@ void MenuTask::makeCurrent()
 void MenuTask::render()
 {
     drawBackground();
+    darkenRect(*screen, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    copyTexture(menu, *menu_with_selection);
+    blitKeyed(gui_title, 0, 0, gui_title.width, gui_title.height, *screen, (SCREEN_WIDTH - gui_title.width) / 2, 10);
+    drawPixelTextCenter(*screen, "Survival Edition", SCREEN_WIDTH / 2, 10 + gui_title.height + 4, ui::TITLE);
 
-    const int selection_y[MENU_ITEM_MAX] = { 14, 36, 63, 88, 112, 136 };
+    const int x = (SCREEN_WIDTH - BUTTON_W) / 2;
+    for(int i = 0; i < MENU_ITEM_MAX; ++i)
+        drawButton(*screen, x, BUTTONS_Y + i * (BUTTON_H + BUTTON_GAP), BUTTON_W, BUTTON_H, labels[order[i]], order[i] == menu_selected_item);
 
-    drawTexture(selection, *menu_with_selection, 0, 0, selection.width, selection.height, 23, selection_y[menu_selected_item], selection.width, selection.height);
-
-    drawTexture(*menu_with_selection, *screen, 0, 0, menu_width_visible, menu_with_selection->height, SCREEN_WIDTH - menu_width_visible, 0, menu_width_visible, menu_with_selection->height);
+    drawPixelText(*screen, "8/2 move   5 select   menu back", 3, SCREEN_HEIGHT - 11, ui::GREY_TEXT, false);
 }
 
 void MenuTask::logic()
 {
-    //Slide menu
-    if(menu_open && static_cast<unsigned int>(menu_width_visible) < menu_with_selection->width)
-        menu_width_visible += 10;
-    else if(!menu_open && menu_width_visible > 0)
-        menu_width_visible -= 10;
-
-    if(menu_width_visible < 0)
-        menu_width_visible = 0;
-    else if(static_cast<unsigned int>(menu_width_visible) > menu.width)
-        menu_width_visible = menu.width;
-
-    //Wait for the menu to be closed, then set the current task
-    if(!menu_open && menu_width_visible == 0)
+    if(key_held_down)
     {
-        switch(menu_selected_item)
-        {
-        case HELP:
-            help_task.makeCurrent();
-            break;
-        case SETTINGS:
-            settings_task.makeCurrent();
-            world_task.setMessage("Settings applied.");
-            break;
-        default:
-            world_task.makeCurrent();
-            break;
-        }
-
+        key_held_down = keyPressed(KEY_NSPIRE_CLICK) || keyPressed(KEY_NSPIRE_UP) || keyPressed(KEY_NSPIRE_DOWN) || keyPressed(KEY_NSPIRE_8) || keyPressed(KEY_NSPIRE_2) || keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_MENU) || keyPressed(KEY_NSPIRE_ESC);
         return;
     }
 
-    if(key_held_down)
-        key_held_down = keyPressed(KEY_NSPIRE_CLICK) || keyPressed(KEY_NSPIRE_UP) || keyPressed(KEY_NSPIRE_DOWN) || keyPressed(KEY_NSPIRE_8) || keyPressed(KEY_NSPIRE_2) || keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_MENU) || keyPressed(KEY_NSPIRE_ESC);
-    else if(keyPressed(KEY_NSPIRE_8) || keyPressed(KEY_NSPIRE_UP))
+    if(keyPressed(KEY_NSPIRE_8) || keyPressed(KEY_NSPIRE_UP))
     {
-        --menu_selected_item;
-        if(menu_selected_item < 0)
-            menu_selected_item = MENU_ITEM_MAX - 1;
-
+        menu_selected_item = order[(positionOf(menu_selected_item) + MENU_ITEM_MAX - 1) % MENU_ITEM_MAX];
         key_held_down = true;
     }
     else if(keyPressed(KEY_NSPIRE_2) || keyPressed(KEY_NSPIRE_DOWN))
     {
-        ++menu_selected_item;
-        if(menu_selected_item == MENU_ITEM_MAX)
-            menu_selected_item = 0;
-
+        menu_selected_item = order[(positionOf(menu_selected_item) + 1) % MENU_ITEM_MAX];
         key_held_down = true;
     }
     else if(keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_CLICK))
     {
+        key_held_down = true;
+
         switch(menu_selected_item)
         {
         case NEW_WORLD:
             world_task.resetWorld();
+            world_task.makeCurrent();
             break;
 
         case LOAD_WORLD:
@@ -109,6 +90,7 @@ void MenuTask::logic()
                 world_task.setMessage("World loaded.");
             else
                 world_task.setMessage("World failed to load.");
+            world_task.makeCurrent();
             break;
 
         case SAVE_WORLD:
@@ -116,6 +98,7 @@ void MenuTask::logic()
                 world_task.setMessage("World saved.");
             else
                 world_task.setMessage("Failed to save world.");
+            world_task.makeCurrent();
             break;
 
         case EXIT:
@@ -123,17 +106,17 @@ void MenuTask::logic()
             break;
 
         case HELP:
+            help_task.makeCurrent();
+            break;
+
         case SETTINGS:
-            //Handled above, at the start of this function
+            settings_task.makeCurrent();
             break;
         }
-
-        menu_open = false;
-        key_held_down = true;
     }
     else if(keyPressed(KEY_NSPIRE_MENU) || keyPressed(KEY_NSPIRE_ESC))
     {
-        menu_open = false;
+        world_task.makeCurrent();
         key_held_down = true;
     }
 }

@@ -1,19 +1,27 @@
 #include "helptask.h"
 
-#include "font.h"
+#include "uikit.h"
 #include "worldtask.h"
 
 HelpTask help_task;
 
-HelpTask::HelpTask()
-{
-    background = newTexture(background_width, background_height, 0, false);
-}
+namespace {
 
-HelpTask::~HelpTask()
-{
-    deleteTexture(background);
-}
+const char *const controls[][2] = {
+    { "8 4 6 2", "Walk (auto-jump climbs steps)" },
+    { "5", "Jump" },
+    { "7", "Place block" },
+    { "9", "Break block" },
+    { "1 / 3", "Previous / next hotbar slot" },
+    { ".", "Inventory (creative: block list)" },
+    { "Menu", "Game menu" },
+    { "Esc", "Save and quit" },
+    { "+ / -", "View distance" },
+    { "Ctrl + .", "Screenshot" },
+    { "In screens", "5 take/put, 7 half/one, enter send" },
+};
+
+} // namespace
 
 void HelpTask::makeCurrent()
 {
@@ -26,32 +34,29 @@ void HelpTask::makeCurrent()
 void HelpTask::render()
 {
     drawBackground();
+    darkenRect(*screen, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    const unsigned int x = (SCREEN_WIDTH - background->width) / 2;
-    const unsigned int y = (SCREEN_HEIGHT - background->height) / 2;
-    drawTextureOverlay(*background, 0, 0, *screen, x, y, background->width, background->height);
-    drawString("Help for Crafti v1.3", 0xFFFF, *screen, x, y - fontHeight());
+    drawPixelTextCenter(*screen, "Help & Controls", SCREEN_WIDTH / 2, 8, ui::TEXT_WHITE);
 
-    drawString("8-4-6-2: Walk around\t5: Jump\n"
-               "7: Put block down   \t9: Destroy block\n"
-               "1-3: Change inventory slot\n"
-               "ESC: Save & Exit\n"
-               ".: Open list of blocks\n"
-               "    5: Change block in inventory\n"
-               "    . or ESC: Close list of blocks\n"
-               "Menu: Open menu\n"
-               "    2-8: Move cursor\t5: Select\n"
-               "Ctrl+.: Take screenshot\n"
-               "\n"
-               "Programmed by Fabian Vogt\n"
-               "Textures from PureBDcraft by https://bdcraft.net", 0xFFFF, *screen, x + 10, y + 8);
+    int y = 26;
+    for(const auto &row : controls)
+    {
+        drawPixelText(*screen, row[0], 104 - pixelTextWidth(row[0]), y, ui::YELLOW);
+        drawPixelText(*screen, row[1], 114, y, ui::TEXT);
+        y += 13;
+    }
+
+    drawPixelTextCenter(*screen, "Crafti by Fabian Vogt - Survival Edition fork", SCREEN_WIDTH / 2, y + 4, ui::GREY_TEXT + 0x2104, false);
+    drawPixelTextCenter(*screen, "Block textures: PureBDcraft (bdcraft.net)", SCREEN_WIDTH / 2, y + 14, ui::GREY_TEXT + 0x2104, false);
+
+    drawButton(*screen, (SCREEN_WIDTH - 200) / 2, SCREEN_HEIGHT - 26, 200, 20, "Done", true);
 }
 
 void HelpTask::logic()
 {
     if(key_held_down)
-        key_held_down = keyPressed(KEY_NSPIRE_ESC);
-    else if(keyPressed(KEY_NSPIRE_ESC))
+        key_held_down = keyPressed(KEY_NSPIRE_ESC) || keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_CLICK);
+    else if(keyPressed(KEY_NSPIRE_ESC) || keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_CLICK))
     {
         world_task.makeCurrent();
 

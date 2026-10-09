@@ -44,9 +44,15 @@ public:
 
 private:
     std::vector<SettingsEntry> settings;
-    static constexpr int background_width = SCREEN_WIDTH - 50, background_height = SCREEN_HEIGHT - 50;
-    TEXTURE *background;
+    // Rows: every setting, then Game Mode (kept in the world save, not here), then Done.
+    unsigned int rowCount() const { return settings.size() + 2; }
+    unsigned int gameModeRow() const { return settings.size(); }
+    void change(int direction);
+    void close();
+    static constexpr int row_width = 200, row_height = 18, row_gap = 2, rows_top = 22;
+public:
     unsigned int current_selection = 0;
+private:
     bool changed_something;
 };
 

@@ -1,10 +1,10 @@
 #include "settingstask.h"
 
-#include "font.h"
+#include "gamestate.h"
+#include "uikit.h"
 #include "texturetools.h"
 #include "worldtask.h"
 
-#include "textures/selection.h"
 
 SettingsTask settings_task;
 
@@ -44,13 +44,10 @@ SettingsTask::SettingsTask()
     settings.push_back({"World", world_static_values, 2, 1, 0, 1});
     settings.push_back({"Show FPS", fastmode_values, 2, 0, 0, 1});
     settings.push_back({"Auto-jump", fastmode_values, 2, 1, 0, 1}); //On by default
-
-    background = newTexture(background_width, background_height, 0, false);
 }
 
 SettingsTask::~SettingsTask()
 {
-    deleteTexture(background);
 }
 
 void SettingsTask::makeCurrent()
@@ -68,96 +65,112 @@ void SettingsTask::makeCurrent()
 void SettingsTask::render()
 {
     drawBackground();
+    darkenRect(*screen, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    const unsigned int x = (SCREEN_WIDTH - background->width) / 2;
-    unsigned int y = (SCREEN_HEIGHT - background->height) / 2;
-    drawTextureOverlay(*background, 0, 0, *screen, x, y, background->width, background->height);
-    drawString("Settings", 0xFFFF, *screen, x, y - fontHeight());
+    drawPixelTextCenter(*screen, "Options", SCREEN_WIDTH / 2, 8, ui::TEXT_WHITE);
 
-    y += 8;
+    const int x = (SCREEN_WIDTH - row_width) / 2;
+    int y = rows_top;
+    char label[48];
 
-    for(unsigned int i = 0; i < settings.size(); ++i)
+    for(unsigned int i = 0; i < rowCount(); ++i, y += row_height + row_gap)
     {
-        SettingsEntry &e = settings[i];
-
-        if(i == current_selection)
-            drawTexture(selection, *screen, 0, 0, selection.width, selection.height, x + 5, y, selection.width, selection.height);
-
-        drawString(e.name, 0xFFFF, *screen, x + selection.width + 10, y);
-
-        //Print the numeric value
-        if(e.values == nullptr)
+        bool enabled = true;
+        if(i < settings.size())
         {
-            char number[10];
-            snprintf(number, sizeof(number), "%d", e.current_value);
-            drawString(number, 0xFFFF, *screen, x + 100, y);
+            const SettingsEntry &e = settings[i];
+            if(e.values == nullptr)
+                snprintf(label, sizeof(label), "%s: %u", e.name, e.current_value);
+            else
+                snprintf(label, sizeof(label), "%s: %s", e.name, e.values[e.current_value]);
+        }
+        else if(i == gameModeRow())
+        {
+            snprintf(label, sizeof(label), "Game Mode: %s", player_state.mode == GameMode::SURVIVAL ? "Survival" : "Creative");
+            enabled = canChangeGameMode(world_state.hardcore);
         }
         else
-            drawString(e.values[e.current_value], 0xFFFF, *screen, x + 100, y);
+            snprintf(label, sizeof(label), "Done");
 
-        y += fontHeight() + 5;
+        drawButton(*screen, x, y, row_width, row_height, label, i == current_selection, enabled);
     }
 
+    drawPixelText(*screen, "8/2 move   4/6 change   esc done", 3, SCREEN_HEIGHT - 11, ui::GREY_TEXT, false);
+}
+
+void SettingsTask::close()
+{
+    world_task.makeCurrent();
+
+    if(changed_something)
+    {
+        world.setDirty();
+        world.setFieldOfView(settings[DISTANCE].current_value);
+
+        nglSetNearPlane(settings[NEARPLANE_Z].current_value);
+
+        world_task.setMessage("Settings applied.");
+    }
+}
+
+void SettingsTask::change(int direction)
+{
+    if(current_selection == gameModeRow())
+    {
+        if(canChangeGameMode(world_state.hardcore))
+            player_state.mode = player_state.mode == GameMode::SURVIVAL ? GameMode::CREATIVE : GameMode::SURVIVAL;
+        return;
+    }
+    if(current_selection >= settings.size())
+        return;
+
+    SettingsEntry &entry = settings[current_selection];
+    if(direction < 0)
+    {
+        if(entry.current_value < entry.min_value + entry.step)
+            entry.current_value = entry.values_count - 1;
+        else
+            entry.current_value -= entry.step;
+    }
+    else
+    {
+        entry.current_value += entry.step;
+        if(entry.current_value >= entry.values_count)
+            entry.current_value = entry.min_value;
+    }
+
+    changed_something = true;
 }
 
 void SettingsTask::logic()
 {
     if(key_held_down)
-        key_held_down = keyPressed(KEY_NSPIRE_ESC) || keyPressed(KEY_NSPIRE_UP) || keyPressed(KEY_NSPIRE_DOWN) || keyPressed(KEY_NSPIRE_2) || keyPressed(KEY_NSPIRE_8) || keyPressed(KEY_NSPIRE_LEFT) || keyPressed(KEY_NSPIRE_4) || keyPressed(KEY_NSPIRE_RIGHT) || keyPressed(KEY_NSPIRE_6);
-    else if(keyPressed(KEY_NSPIRE_ESC))
     {
-        world_task.makeCurrent();
-
-        if(changed_something)
-        {
-            world.setDirty();
-            world.setFieldOfView(settings[DISTANCE].current_value);
-
-            nglSetNearPlane(settings[NEARPLANE_Z].current_value);
-        }
-
-        key_held_down = true;
+        key_held_down = keyPressed(KEY_NSPIRE_ESC) || keyPressed(KEY_NSPIRE_UP) || keyPressed(KEY_NSPIRE_DOWN) || keyPressed(KEY_NSPIRE_2) || keyPressed(KEY_NSPIRE_8) || keyPressed(KEY_NSPIRE_LEFT) || keyPressed(KEY_NSPIRE_4) || keyPressed(KEY_NSPIRE_RIGHT) || keyPressed(KEY_NSPIRE_6) || keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_CLICK);
+        return;
     }
+
+    key_held_down = true;
+    if(keyPressed(KEY_NSPIRE_ESC))
+        close();
     else if(keyPressed(KEY_NSPIRE_UP) || keyPressed(KEY_NSPIRE_8))
-    {
-        if(current_selection == 0)
-            current_selection = settings.size() - 1;
-        else
-            --current_selection;
-
-        key_held_down = true;
-    }
+        current_selection = (current_selection + rowCount() - 1) % rowCount();
     else if(keyPressed(KEY_NSPIRE_DOWN) || keyPressed(KEY_NSPIRE_2))
-    {
-        ++current_selection;
-        if(current_selection >= settings.size())
-            current_selection = 0;
-
-        key_held_down = true;
-    }
+        current_selection = (current_selection + 1) % rowCount();
     else if(keyPressed(KEY_NSPIRE_LEFT) || keyPressed(KEY_NSPIRE_4))
-    {
-        SettingsEntry &entry = settings[current_selection];
-        if(entry.current_value < entry.min_value + entry.step)
-            entry.current_value = entry.values_count - 1;
-        else
-            entry.current_value -= entry.step;
-
-        changed_something = true;
-
-        key_held_down = true;
-    }
+        change(-1);
     else if(keyPressed(KEY_NSPIRE_RIGHT) || keyPressed(KEY_NSPIRE_6))
+        change(1);
+    else if(keyPressed(KEY_NSPIRE_5) || keyPressed(KEY_NSPIRE_CLICK))
     {
-        SettingsEntry &entry = settings[current_selection];
-        entry.current_value += entry.step;
-        if(entry.current_value >= entry.values_count)
-            entry.current_value = entry.min_value;
-
-        changed_something = true;
-
-        key_held_down = true;
+        // Like clicking a button: Done closes, anything else steps forward.
+        if(current_selection == rowCount() - 1)
+            close();
+        else
+            change(1);
     }
+    else
+        key_held_down = false;
 }
 
 unsigned int SettingsTask::getValue(unsigned int entry) const
