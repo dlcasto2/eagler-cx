@@ -5,20 +5,14 @@
 
 #include "gl.h"
 
+// Lists every control, with a Done button.
 class HelpTask : public Task
 {
 public:
-    HelpTask();
-    virtual ~HelpTask();
-
     virtual void makeCurrent() override;
 
     virtual void render() override;
     virtual void logic() override;
-
-private:
-    static constexpr int background_width = SCREEN_WIDTH - 40, background_height = SCREEN_HEIGHT - 40;
-    TEXTURE *background;
 };
 
 extern HelpTask help_task;

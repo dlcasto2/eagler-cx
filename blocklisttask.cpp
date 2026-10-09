@@ -3,7 +3,8 @@
 #include <algorithm>
 
 #include "blockrenderer.h"
-#include "font.h"
+#include "playerinventory.h"
+#include "uikit.h"
 #include "inventory.h"
 #include "terrain.h"
 #include "texturetools.h"
@@ -58,28 +59,11 @@ static const BLOCK_WDATA user_selectable[] = {
     BLOCK_REDSTONE_TORCH
 };
 
-//The values have to stay somewhere
-unsigned int BlockListTask::blocklist_top;
-//Black texture as background
-TEXTURE *BlockListTask::blocklist_background;
-
 constexpr int user_selectable_count = sizeof(user_selectable)/sizeof(*user_selectable);
 
 BlockListTask::BlockListTask()
 {
-    blocklist_top = (SCREEN_HEIGHT - blocklist_height - current_inventory.height()) / 2;
-
-    static_assert(field_width * fields_x <= SCREEN_WIDTH, "fields_x too high");
     static_assert(fields_x * fields_y >= sizeof(user_selectable)/sizeof(*user_selectable), "Not enough fields");
-    if(blocklist_height + current_inventory.height() > SCREEN_WIDTH)
-        printf("fields_y too high\n");
-
-    blocklist_background = newTexture(blocklist_width, blocklist_height, 0, false);
-}
-
-BlockListTask::~BlockListTask()
-{
-    deleteTexture(blocklist_background);
 }
 
 void BlockListTask::makeCurrent()
@@ -93,37 +77,41 @@ void BlockListTask::makeCurrent()
 void BlockListTask::render()
 {
     drawBackground();
+    darkenRect(*screen, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    drawTextureOverlay(*blocklist_background, 0, 0, *screen, blocklist_left, blocklist_top, blocklist_background->width, blocklist_background->height);
+    // A creative-style panel: the block grid on top, the hotbar row below.
+    const int px = (SCREEN_WIDTH - panel_width) / 2, py = (SCREEN_HEIGHT - panel_height) / 2 - 6;
+    drawPanel(*screen, px, py, panel_width, panel_height);
+    drawPixelText(*screen, "Blocks", px + 8, py + 6, ui::DARK_TEXT, false);
 
-    int block_nr = 0;
-    int screen_x, screen_y = blocklist_top + pad_y;
-    for(int y = 0; y < fields_y; y++, screen_y += field_height)
+    const int gx = px + 7, gy = py + 18;
+    for(int i = 0; i < fields_x * fields_y; ++i)
     {
-        screen_x = blocklist_left + pad_x;
-        for(int x = 0; x < fields_x; x++, screen_x += field_width)
-        {
-            //BLOCK_DOOR is twice as high, so center it manually
-            if(getBLOCK(user_selectable[block_nr]) == BLOCK_DOOR)
-                global_block_renderer.drawPreview(user_selectable[block_nr], *screen, screen_x + pad_x, screen_y + pad_y_door);
-            else
-                global_block_renderer.drawPreview(user_selectable[block_nr], *screen, screen_x + pad_y, screen_y + pad_y);
-
-            block_nr++;
-            if(block_nr == user_selectable_count)
-                goto end;
-        }
+        const int sx = gx + SLOT * (i % fields_x), sy = gy + SLOT * (i / fields_x);
+        drawSlot(*screen, sx, sy);
+        if(i < user_selectable_count)
+            drawItemStack(*screen, sx + 1, sy + 1, ItemStack::ofBlock(user_selectable[i]));
     }
 
-    end:
+    const int hy = gy + SLOT * fields_y + 4;
+    for(int i = 0; i < PlayerInventory::HOTBAR; ++i)
+    {
+        drawSlot(*screen, gx + SLOT * i, hy);
+        drawItemStack(*screen, gx + SLOT * i + 1, hy + 1, player_inventory.slots[i]);
+    }
+    // the slot that 5 will fill
+    const int hx = gx + SLOT * player_inventory.selected;
+    fillRect(*screen, hx, hy - 1, SLOT, 1, 0xFFFF);
+    fillRect(*screen, hx, hy + SLOT, SLOT, 1, 0xFFFF);
+    fillRect(*screen, hx - 1, hy - 1, 1, SLOT + 2, 0xFFFF);
+    fillRect(*screen, hx + SLOT, hy - 1, 1, SLOT + 2, 0xFFFF);
 
-    //Draw the selection indicator
-    screen_x = blocklist_left + pad_x + field_width * (current_selection % fields_x);
-    screen_y = blocklist_top + pad_y + field_height * (current_selection / fields_x);
-    drawTexture(*inv_selection_p, *screen, 0, 0, inv_selection_p->width, inv_selection_p->height, screen_x + pad_x - 11, screen_y + pad_y - 10, inv_selection_p->width, inv_selection_p->height);
+    const int cx = gx + SLOT * (current_selection % fields_x), cy = gy + SLOT * (current_selection / fields_x);
+    drawSlotHighlight(*screen, cx, cy);
+    drawItemStack(*screen, cx + 1, cy + 1, ItemStack::ofBlock(user_selectable[current_selection]));
+    drawTooltip(*screen, global_block_renderer.getName(user_selectable[current_selection]), cx + 14, cy - 14);
 
-    current_inventory.draw(*screen);
-    drawStringCenter(global_block_renderer.getName(user_selectable[current_selection]), 0xFFFF, *screen, SCREEN_WIDTH / 2, SCREEN_HEIGHT - current_inventory.height() - fontHeight());
+    drawPixelTextCenter(*screen, "5 put in slot   1/3 pick slot   . close", SCREEN_WIDTH / 2, py + panel_height + 4, ui::TEXT);
 }
 
 void BlockListTask::logic()

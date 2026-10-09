@@ -5,6 +5,7 @@
 
 #include "task.h"
 
+// The game menu: the title wordmark over a stack of wide buttons.
 class MenuTask : public Task
 {
 public:
@@ -18,18 +19,12 @@ public:
         MENU_ITEM_MAX
     };
 
-    MenuTask();
-    virtual ~MenuTask();
-
     virtual void makeCurrent() override;
 
     virtual void render() override;
     virtual void logic() override;
 
-private:
-    int menu_selected_item = 0, menu_width_visible = 0;
-    bool menu_open = true;
-    TEXTURE *menu_with_selection;
+    int menu_selected_item = SAVE_WORLD;
 };
 
 extern MenuTask menu_task;

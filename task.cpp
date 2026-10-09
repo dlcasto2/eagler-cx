@@ -115,7 +115,7 @@ LoadResult Task::load()
 
     if(version <= 6)
     {
-        BLOCK_WDATA hotbar[Inventory::slot_count];
+        BLOCK_WDATA hotbar[5]; // v6 saves held a 5-slot hotbar
         LOAD_OR_FAIL(hotbar)
         LOAD_OR_FAIL(world_task.xr)
         LOAD_OR_FAIL(world_task.yr)

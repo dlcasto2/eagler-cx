@@ -17,6 +17,10 @@
 #include "fastmath.h"
 #include "font.h"
 #include "inventory.h"
+#include "inventoryscreen.h"
+#include "hotbar.h"
+#include "playerinventory.h"
+#include "uikit.h"
 
 #include "textures/blockselection.h"
 
@@ -177,12 +181,26 @@ void WorldTask::logic()
         BLOCK_WDATA current_block = world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z),
                     block_to_place = current_inventory.currentBlock();
 
+        if(block_to_place == BLOCK_AIR)
+            return;
+
+        // Survival places from the stack; creative never runs out.
+        const bool survival = player_state.mode == GameMode::SURVIVAL;
+        auto useOne = [survival]() {
+            if(!survival)
+                return;
+            ItemStack &held = player_inventory.selectedStack();
+            if(--held.count == 0)
+                held = ItemStack();
+        };
+
         // When placing fluid onto a non-full fluid block of the same type, "fill" it
         if(current_block != block_to_place
            && ((getBLOCK(current_block) == BLOCK_WATER && getBLOCK(block_to_place) == BLOCK_WATER)
                || (getBLOCK(current_block) == BLOCK_LAVA && getBLOCK(block_to_place) == BLOCK_LAVA)))
         {
             world.changeBlock(selection_pos.x, selection_pos.y, selection_pos.z, block_to_place);
+            useOne();
             return;
         }
 
@@ -232,12 +250,18 @@ void WorldTask::logic()
             //If the player is stuck now, it's because of the block change, so remove it again
             if(world.intersect(aabb))
                 world.changeBlock(pos.x, pos.y, pos.z, current_block);
+            else
+                useOne();
         }
     }
     else if(keyPressed(KEY_NSPIRE_9)) //Remove block
     {
-        if(selection_side != AABB::NONE && world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z) != BLOCK_BEDROCK)
+        const BLOCK_WDATA target = selection_side == AABB::NONE ? BLOCK_AIR : world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z);
+        if(selection_side != AABB::NONE && target != BLOCK_BEDROCK)
         {
+            // Until hold-to-mine and drops arrive, survival collects the block straight away.
+            if(player_state.mode == GameMode::SURVIVAL && getBLOCK(target) != BLOCK_WATER && getBLOCK(target) != BLOCK_LAVA)
+                player_inventory.add(ItemStack::ofBlock(getBLOCKWDATA(getBLOCK(target), 0)));
             world.spawnDestructionParticles(selection_pos.x, selection_pos.y, selection_pos.z);
             world.changeBlock(selection_pos.x, selection_pos.y, selection_pos.z, BLOCK_AIR);
         }
@@ -286,7 +310,10 @@ void WorldTask::logic()
             draw_inventory = false;
             render();
             draw_inventory = true;
-            block_list_task.makeCurrent();
+            if(player_state.mode == GameMode::SURVIVAL)
+                inventory_screen.makeCurrent();
+            else
+                block_list_task.makeCurrent();
         }
 
         key_held_down = true;
@@ -471,12 +498,15 @@ void WorldTask::render()
     if(draw_inventory)
     {
         current_inventory.draw(*screen);
-        drawStringCenter(global_block_renderer.getName(current_inventory.currentBlock()), 0xFFFF, *screen, SCREEN_WIDTH / 2, SCREEN_HEIGHT - current_inventory.height() - fontHeight());
+        const int top = drawStatusBars(*screen, in_water);
+        const char *name = itemName(player_inventory.selectedStack());
+        if(*name)
+            drawPixelTextCenter(*screen, name, SCREEN_WIDTH / 2, top - 9, ui::TEXT_WHITE);
     }
 
     if(message_timeout > 0)
     {
-        drawString(message, 0xFFFF, *screen, 2, 5);
+        drawPixelText(*screen, message, 3, 3, ui::TEXT_WHITE);
         --message_timeout;
     }
 
@@ -492,7 +522,7 @@ void WorldTask::render()
         snprintf(this->message, sizeof(this->message), "FPS %u | TPS %u | ents %d | light %d | tex %uKB",
                  fps, stress_tps, entity_pool.count(), stressBrightnessForTick(stress_tick_count),
                  static_cast<unsigned>(lightingMemoryBytes() / 1024));
-        drawString(this->message, 0xFFFF, *screen, 2, 5);
+        drawPixelText(*screen, this->message, 3, 3, ui::TEXT_WHITE);
     #endif
 
     frame_counter++;
