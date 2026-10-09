@@ -68,9 +68,16 @@ int main(int argc, char *argv[])
     case LoadResult::MISSING:
         break;
     case LoadResult::UNREADABLE:
-        Task::savefile = strdup(chooseSavePath(Task::savefile, load_result).c_str());
+    {
+        // Never overwrite an unreadable save: switch to the .new path.
+        // Static so the string outlives every later use of Task::savefile.
+        // (strdup is POSIX and hidden by -std=c++11 on the calculator.)
+        static std::string fallback_savefile;
+        fallback_savefile = chooseSavePath(Task::savefile, load_result);
+        Task::savefile = fallback_savefile.c_str();
         world_task.setMessage("Save unreadable - kept. New world in .new");
         break;
+    }
     }
 
 
