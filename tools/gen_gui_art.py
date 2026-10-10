@@ -164,17 +164,17 @@ class Img:
                 if c is not None:
                     self.set(ox + x, oy + y, c)
 
-    def to565(self):
+    def to565(self, key=KEY):
         out = []
         for row in self.px:
             for c in row:
                 if c is None:
-                    out.append(KEY)
+                    out.append(key)
                 else:
                     r, g, b = c
                     v = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
-                    if v == KEY:
-                        v = KEY ^ 0x20  # never collide with the key
+                    if v == key:
+                        v = key ^ 0x20  # never collide with the key
                     out.append(v)
         return out
 
@@ -347,6 +347,48 @@ def title_logo(text='CRAFTI', scale=4):
     return final
 
 
+
+# ------------------------------------------- sun and moon (32 x 32)
+def sun_disc():
+    """A round sun: white-hot middle, yellow body, orange rim, soft corona."""
+    img = Img(32, 32)
+    for y in range(32):
+        for x in range(32):
+            dx, dy = x - 15.5, y - 15.5
+            r = (dx * dx + dy * dy) ** 0.5
+            if r < 7:
+                img.set(x, y, (255, 252, 226))
+            elif r < 10:
+                img.set(x, y, (255, 238, 120))
+            elif r < 12:
+                img.set(x, y, (255, 206, 64))
+            elif r < 13:
+                img.set(x, y, (250, 160, 40))
+            elif r < 15.5 and (x + y) % 2 == 0:
+                img.set(x, y, (255, 226, 140))   # dithered glow
+    return img
+
+
+def moon_disc():
+    """A pale moon with a few soft grey craters."""
+    img = Img(32, 32)
+    craters = [(11, 12, 3), (19, 18, 2.5), (14, 21, 1.8), (20, 10, 1.6)]
+    for y in range(32):
+        for x in range(32):
+            dx, dy = x - 15.5, y - 15.5
+            r = (dx * dx + dy * dy) ** 0.5
+            if r < 11:
+                c = (226, 230, 240)
+                for cx, cy, cr in craters:
+                    if (x - cx) ** 2 + (y - cy) ** 2 < cr * cr:
+                        c = (176, 182, 198)
+                if x - y > 8:
+                    c = (c[0] - 30, c[1] - 30, c[2] - 20)   # shaded edge
+                img.set(x, y, c)
+            elif r < 12:
+                img.set(x, y, (150, 156, 176))
+    return img
+
 # ------------------------------------------------------------ output
 def c_array(name, data, per_line=16):
     lines = ['static COLOR %s_data[] = {' % name]
@@ -387,6 +429,13 @@ def main():
     for name, img in images.items():
         out.append(c_array(name, img.to565()))
         out.append('TEXTURE %s = { %d, %d, true, 0x%04X, %s_data };' % (name, img.w, img.h, KEY, name))
+        out.append('')
+        img.save_preview(os.path.join(preview, name + '.png'))
+
+    # Drawn in the 3D sky by nGL, which treats black (0x0000) as transparent.
+    for name, img in (('gui_sun', sun_disc()), ('gui_moon', moon_disc())):
+        out.append(c_array(name, img.to565(key=0x0000)))
+        out.append('TEXTURE %s = { %d, %d, true, 0x0000, %s_data };' % (name, img.w, img.h, name))
         out.append('')
         img.save_preview(os.path.join(preview, name + '.png'))
 
