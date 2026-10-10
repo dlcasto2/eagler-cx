@@ -151,3 +151,15 @@ TEST_CASE("leaves sometimes drop an apple") {
     CHECK(other == 0);
     CHECK(apples > 60); CHECK(apples < 140);   // 0.5% of 20000 = 100
 }
+
+TEST_CASE("emeralds need iron, Ancient Debris needs diamond") {
+    CHECK_FALSE(canHarvest(BLOCK_EMERALD_ORE, STONE_PICK));
+    CHECK(canHarvest(BLOCK_EMERALD_ORE, IRON_PICK));
+    CHECK_FALSE(canHarvest(BLOCK_ANCIENT_DEBRIS, IRON_PICK));
+    CHECK(canHarvest(BLOCK_ANCIENT_DEBRIS, DIAMOND_PICK));
+    uint32_t rng = 3;
+    CHECK(blockDropFor(BLOCK_EMERALD_ORE, IRON_PICK, rng).id == ITEM_EMERALD);
+    CHECK(blockDropFor(BLOCK_ANCIENT_DEBRIS, DIAMOND_PICK, rng).id == BLOCK_ANCIENT_DEBRIS);
+    // hardness 30 with a diamond pickaxe: 30 * 30 / 8 = 112.5 ticks, about 5.6 s
+    CHECK(miningTicks(BLOCK_ANCIENT_DEBRIS, DIAMOND_PICK, false, true) == 113);
+}

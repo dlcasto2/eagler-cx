@@ -40,7 +40,10 @@ constexpr BLOCK BLOCK_IRON = 26;
 constexpr BLOCK BLOCK_GOLD = 27;
 constexpr BLOCK BLOCK_DIAMOND = 28;
 constexpr BLOCK BLOCK_NETHERRACK = 29;
-constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_NETHERRACK;
+// 30 (wool) and 32 (block of emerald) stay reserved, see blockdefs.h
+constexpr BLOCK BLOCK_EMERALD_ORE = 31;
+constexpr BLOCK BLOCK_ANCIENT_DEBRIS = 33;
+constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_ANCIENT_DEBRIS;
 
 //Special blocks begin here
 constexpr int BLOCK_SPECIAL_START = 127;

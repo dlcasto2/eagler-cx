@@ -30,6 +30,7 @@ public:
     bool intersect(AABB &other) const;
     bool intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, VECTOR3 &result, AABB::SIDE &side, GLFix &dist, bool ignore_water) const;
     const PerlinNoise &noiseGenerator() const;
+    uint32_t worldSeed() const { return *seed; }
     void clear();
     void setDirty();
     bool loadFromFile(gzFile file);

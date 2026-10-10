@@ -356,6 +356,8 @@ UniversalBlockRenderer::UniversalBlockRenderer()
     }
 
     map[BLOCK_AIR] = null_renderer;
+    map[30] = null_renderer;   // reserved: wool
+    map[32] = null_renderer;   // reserved: block of emerald
     map[BLOCK_BOOKSHELF] = oriented_renderer;
     map[BLOCK_CAKE] = std::make_shared<CakeRenderer>();
     map[BLOCK_CRAFTING_TABLE] = oriented_renderer;
