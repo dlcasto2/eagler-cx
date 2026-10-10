@@ -50,7 +50,7 @@ bool buildTable()
     def(BLOCK_PUMPKIN, 100, AXE, 0);
     def(BLOCK_DOOR, 300, AXE, 0);
 
-    def(BLOCK_LEAVES, 20, NONE, 0, NOTHING);
+    def(BLOCK_LEAVES, 20, NONE, 0, BlockDrop{ ITEM_APPLE, 1, 1, 5 });   // oak leaves: 1 in 200
     def(BLOCK_GLASS, 30, NONE, 0, NOTHING);
     def(BLOCK_GLOWSTONE, 30, NONE, 0, SELF, 15);
     def(BLOCK_REDSTONE_LAMP, 30, NONE, 0, SELF, 15);   // only while lit; checked in Phase 5
