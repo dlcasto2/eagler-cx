@@ -23,4 +23,7 @@ extern TEXTURE gui_crack;
 // The "CRAFTI" wordmark for the menu.
 extern TEXTURE gui_title;
 
+// 32x32 sun and moon for the sky. Black is transparent (nGL's rule for 3D).
+extern TEXTURE gui_sun, gui_moon;
+
 #endif // GUI_ART_H

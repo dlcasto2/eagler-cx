@@ -27,6 +27,7 @@ public:
 
 private:
     void crosshairPixel(int x, int y);
+    void renderSky();
 
     void getForward(GLFix *x, GLFix *z);
     void getRight(GLFix *x, GLFix *z);

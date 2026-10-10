@@ -8,6 +8,10 @@
 #include "platform_time.h"
 #include "lighting.h"
 #include "gamestate.h"
+#include "daylight.h"
+#include "gui_art.h"
+#include "particle.h"
+#include "texturetools.h"
 
 #include "aabb.h"
 #include "blockrenderer.h"
@@ -366,7 +370,8 @@ void WorldTask::tick()
 
     entity_pool.tick(world_collision);
 
-    world_state.time_of_day = (world_state.time_of_day + 1) % 24000;
+    world_state.time_of_day = (world_state.time_of_day + 1) % DAY_TICKS;
+    world.setBrightnessAll(skyBrightnessLevel(world_state.time_of_day));
 
     #ifdef STRESS_TEST
         if(!stress_spawned)
@@ -390,12 +395,43 @@ void WorldTask::tick()
     #endif
 }
 
+// Sun and moon on opposite sides of a circle around the camera, drawn before
+// the world with only the camera's rotation applied, so they stay at the
+// horizon whatever the player does. The depth buffer is cleared afterwards,
+// so any terrain in front covers them.
+void WorldTask::renderSky()
+{
+    constexpr int SKY_DISTANCE = 1500, SKY_SIZE = 260;
+    const FFix angle = sunAngleDegrees(world_state.time_of_day);
+    const GLFix c = fast_cos(angle), s = fast_sin(angle);
+    const TextureAtlasEntry whole = textureArea(0, 0, 32, 32);
+
+    // A little below the horizon still shows, so it can set behind the hills.
+    const GLFix below_horizon = -0.15f;
+    if(s > below_horizon)
+    {
+        glBindTexture(&gui_sun);
+        Particle::render(VECTOR3{c * SKY_DISTANCE, s * SKY_DISTANCE, 0}, SKY_SIZE, whole);
+    }
+    if(-s > below_horizon)
+    {
+        glBindTexture(&gui_moon);
+        Particle::render(VECTOR3{-c * SKY_DISTANCE, -s * SKY_DISTANCE, 0}, SKY_SIZE * 3 / 4, whole);
+    }
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glBindTexture(terrain_current);
+}
+
 void WorldTask::render()
 {
     aabb = {x - player_width/2, y, z - player_width/2, x + player_width/2, y + player_height, z + player_width/2};
     //printf("X: %f Y: %f Z: %f XR: %d YR: %d\n", x.toFloat(), y.toFloat(), z.toFloat(), xr.toInt(), yr.toInt());
 
-    glColor3f(0.4f, 0.6f, 0.8f); //Blue background
+    // Sky colour follows the time of day
+    unsigned sky_r, sky_g, sky_b;
+    skyColor(world_state.time_of_day, sky_r, sky_g, sky_b);
+    nglSetColor(static_cast<COLOR>(((sky_r >> 3) << 11) | ((sky_g >> 2) << 5) | (sky_b >> 3)));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glPushMatrix();
@@ -403,6 +439,8 @@ void WorldTask::render()
     //Inverted rotation of the world
     nglRotateX((GLFix(359) - xr).normaliseAngle());
     nglRotateY((GLFix(359) - yr).normaliseAngle());
+
+    renderSky();
     //Inverted translation of the world
     glTranslatef(-x, -y - eye_pos, -z);
 
