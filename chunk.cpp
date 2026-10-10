@@ -407,27 +407,51 @@ void Chunk::setGlobalBlockRelative(const int x, const int y, const int z, const 
 }
 
 //Ignores any non-obstacle blocks
+// Local block index range [lo, hi] along one axis that a box from 'low' to
+// 'high' can touch, with a one-block margin so touching edges and block
+// shapes that spill slightly past their cell are still checked exactly as
+// before. Returns false if the range misses the chunk.
+static bool blockRange(GLFix low, GLFix high, GLFix chunk_origin, int &lo, int &hi)
+{
+    // floor() rounds towards minus infinity; >> 7 divides by BLOCK_SIZE (128) the same way.
+    static_assert(BLOCK_SIZE == 128, "Update the shift accordingly!");
+    lo = ((low - chunk_origin).floor() >> 7) - 1;
+    hi = ((high - chunk_origin).floor() >> 7) + 1;
+    if(lo < 0) lo = 0;
+    if(hi > Chunk::SIZE - 1) hi = Chunk::SIZE - 1;
+    return lo <= hi;
+}
+
 bool Chunk::intersects(AABB &other)
 {
     if(!aabb.intersects(other))
         return false;
 
-    AABB aabb;
-    aabb.low_x = abs_x;
+    // Only the blocks the box can reach, instead of all SIZE^3: entities call
+    // this several times per tick, so scanning the whole chunk was the main
+    // cost of having many of them.
+    int x0, x1, y0, y1, z0, z1;
+    if(!blockRange(other.low_x, other.high_x, abs_x, x0, x1)
+       || !blockRange(other.low_y, other.high_y, abs_y, y0, y1)
+       || !blockRange(other.low_z, other.high_z, abs_z, z0, z1))
+        return false;
 
-    for(unsigned int x = 0; x < SIZE; x++, aabb.low_x += BLOCK_SIZE)
+    AABB aabb;
+    aabb.low_x = abs_x + x0 * BLOCK_SIZE;
+
+    for(int x = x0; x <= x1; x++, aabb.low_x += BLOCK_SIZE)
     {
         aabb.high_x = aabb.low_x + BLOCK_SIZE;
 
-        aabb.low_y = abs_y;
+        aabb.low_y = abs_y + y0 * BLOCK_SIZE;
 
-        for(unsigned int y = 0; y < SIZE; y++, aabb.low_y += BLOCK_SIZE)
+        for(int y = y0; y <= y1; y++, aabb.low_y += BLOCK_SIZE)
         {
             aabb.high_y = aabb.low_y + BLOCK_SIZE;
 
-            aabb.low_z = abs_z;
+            aabb.low_z = abs_z + z0 * BLOCK_SIZE;
 
-            for(unsigned int z = 0; z < SIZE; z++, aabb.low_z += BLOCK_SIZE)
+            for(int z = z0; z <= z1; z++, aabb.low_z += BLOCK_SIZE)
             {
                 aabb.high_z = aabb.low_z + BLOCK_SIZE;
 
