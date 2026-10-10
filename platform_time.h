@@ -4,7 +4,7 @@
 #include <cstdint>
 
 // A free-running counter for the game clock.
-// CX: second counter of the first SP804 timer, 32768 Hz. PC: SDL ticks, 1000 Hz.
+// CX: first counter of the first SP804 timer, 32768 Hz. PC: SDL ticks, 1000 Hz.
 void platformTimeInit();
 void platformTimeDeinit();
 uint32_t platformTicks();       // wraps at 2^32
