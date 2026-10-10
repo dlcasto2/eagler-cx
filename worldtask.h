@@ -5,6 +5,7 @@
 #include "world.h"
 #include "gl.h"
 #include "aabb.h"
+#include "mining.h"
 
 class WorldTask : public Task
 {
@@ -28,6 +29,7 @@ public:
 private:
     void crosshairPixel(int x, int y);
     void renderSky();
+    void tickMining(bool on_ground);
 
     void getForward(GLFix *x, GLFix *z);
     void getRight(GLFix *x, GLFix *z);
@@ -42,7 +44,10 @@ private:
     bool in_water = false;
 
     int8_t input_forward = 0, input_strafe = 0; //Set by logic(), used by tick()
-    bool input_jump = false;
+    bool input_jump = false, input_mine = false;
+
+    MiningState mining;
+    uint32_t drop_rng = 0x5eed;
 
     #ifdef STRESS_TEST
         bool stress_spawned = false;

@@ -9,6 +9,8 @@
 #include "lighting.h"
 #include "gamestate.h"
 #include "daylight.h"
+#include "mining.h"
+#include "drops.h"
 #include "gui_art.h"
 #include "particle.h"
 #include "texturetools.h"
@@ -69,6 +71,8 @@ void WorldTask::logic()
     input_forward = keyPressed(KEY_NSPIRE_8) ? 1 : (keyPressed(KEY_NSPIRE_2) ? -1 : 0);
     input_strafe = keyPressed(KEY_NSPIRE_6) ? 1 : (keyPressed(KEY_NSPIRE_4) ? -1 : 0);
     input_jump = keyPressed(KEY_NSPIRE_5);
+    // Survival mines while 9 is held; tick() does the work.
+    input_mine = player_state.mode == GameMode::SURVIVAL && keyPressed(KEY_NSPIRE_9);
 
     if(has_touchpad)
     {
@@ -258,14 +262,11 @@ void WorldTask::logic()
                 useOne();
         }
     }
-    else if(keyPressed(KEY_NSPIRE_9)) //Remove block
+    else if(keyPressed(KEY_NSPIRE_9) && player_state.mode != GameMode::SURVIVAL) //Remove block (creative: instantly)
     {
         const BLOCK_WDATA target = selection_side == AABB::NONE ? BLOCK_AIR : world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z);
         if(selection_side != AABB::NONE && target != BLOCK_BEDROCK)
         {
-            // Until hold-to-mine and drops arrive, survival collects the block straight away.
-            if(player_state.mode == GameMode::SURVIVAL && getBLOCK(target) != BLOCK_WATER && getBLOCK(target) != BLOCK_LAVA)
-                player_inventory.add(ItemStack::ofBlock(getBLOCKWDATA(getBLOCK(target), 0)));
             world.spawnDestructionParticles(selection_pos.x, selection_pos.y, selection_pos.z);
             world.changeBlock(selection_pos.x, selection_pos.y, selection_pos.z, BLOCK_AIR);
         }
@@ -370,6 +371,12 @@ void WorldTask::tick()
 
     entity_pool.tick(world_collision);
 
+    if(player_state.mode == GameMode::SURVIVAL)
+        tickMining(motion.on_ground);
+    else
+        mining = MiningState();
+    collectDrops(entity_pool, box, player_inventory);
+
     world_state.time_of_day = (world_state.time_of_day + 1) % DAY_TICKS;
     world.setBrightnessAll(skyBrightnessLevel(world_state.time_of_day));
 
@@ -423,6 +430,27 @@ void WorldTask::renderSky()
     glBindTexture(terrain_current);
 }
 
+void WorldTask::tickMining(bool on_ground)
+{
+    const bool has_target = selection_side != AABB::NONE;
+    const int bx = static_cast<int>(selection_pos.x), by = static_cast<int>(selection_pos.y), bz = static_cast<int>(selection_pos.z);
+    const BLOCK_WDATA target = has_target ? world.getBlock(bx, by, bz) : BLOCK_AIR;
+    ItemStack &held = player_inventory.selectedStack();
+    const ItemId tool = held.empty() ? 0 : held.id;
+
+    if(!miningTick(mining, input_mine, has_target && target != BLOCK_AIR, bx, by, bz, target, tool, in_water, on_ground))
+        return;
+
+    // 1.8.8 order: work out the drop, clear the block, drop it, then wear the tool,
+    // so a tool that breaks on its last block still gives that block.
+    const ItemStack drop = blockDropFor(target, tool, drop_rng);
+    world.spawnDestructionParticles(bx, by, bz);
+    world.changeBlock(bx, by, bz, BLOCK_AIR);
+    spawnDrop(entity_pool, GLFix(bx * BLOCK_SIZE + BLOCK_SIZE / 2), GLFix(by * BLOCK_SIZE + BLOCK_SIZE / 2),
+              GLFix(bz * BLOCK_SIZE + BLOCK_SIZE / 2), drop, player_inventory);
+    wearTool(held, toolWearFor(tool, target));
+}
+
 void WorldTask::render()
 {
     aabb = {x - player_width/2, y, z - player_width/2, x + player_width/2, y + player_height, z + player_width/2};
@@ -469,56 +497,70 @@ void WorldTask::render()
     }
 
     const GLFix indicator_x = selection_pos.x * BLOCK_SIZE, indicator_y = selection_pos.y * BLOCK_SIZE, indicator_z = selection_pos.z * BLOCK_SIZE;
-    const GLFix selection_offset = 3; //Needed to prevent Z-fighting
-
-    glPushMatrix();
-    glTranslatef(indicator_x, indicator_y, indicator_z);
-
-    glBegin(GL_QUADS);
-    switch(selection_side)
+    // Pass 0 draws the selection outline; pass 1, while mining this block,
+    // the crack stage just in front of it.
+    const int crack = crackStage(mining);
+    const bool cracking = crack >= 0 && mining.x == static_cast<int>(selection_pos.x)
+                          && mining.y == static_cast<int>(selection_pos.y) && mining.z == static_cast<int>(selection_pos.z);
+    for(int pass = 0; pass < (cracking ? 2 : 1); ++pass)
     {
-    case AABB::FRONT:
-        nglAddVertex({0, 0, selection_pos_abs.z - indicator_z - selection_offset, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
-        nglAddVertex({0, BLOCK_SIZE, selection_pos_abs.z - indicator_z - selection_offset, tex.left, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({BLOCK_SIZE, BLOCK_SIZE, selection_pos_abs.z - indicator_z - selection_offset, tex.right, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({BLOCK_SIZE, 0, selection_pos_abs.z - indicator_z - selection_offset, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
-        break;
-    case AABB::BACK:
-        nglAddVertex({BLOCK_SIZE, 0, selection_pos_abs.z - indicator_z + selection_offset, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
-        nglAddVertex({BLOCK_SIZE, BLOCK_SIZE, selection_pos_abs.z - indicator_z + selection_offset, tex.left, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({0, BLOCK_SIZE, selection_pos_abs.z - indicator_z + selection_offset, tex.right, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({0, 0, selection_pos_abs.z - indicator_z + selection_offset, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
-        break;
-    case AABB::RIGHT:
-        nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, 0, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
-        nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, BLOCK_SIZE, 0, tex.right, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, BLOCK_SIZE, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, 0, BLOCK_SIZE, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
-        break;
-    case AABB::LEFT:
-        nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, 0, BLOCK_SIZE, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
-        nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, BLOCK_SIZE, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, BLOCK_SIZE, 0, tex.right, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, 0, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
-        break;
-    case AABB::TOP:
-        nglAddVertex({0, selection_pos_abs.y - indicator_y + selection_offset, 0, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
-        nglAddVertex({0, selection_pos_abs.y - indicator_y + selection_offset, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y + selection_offset, BLOCK_SIZE, tex.right, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y + selection_offset, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
-        break;
-    case AABB::BOTTOM:
-        nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y - selection_offset, 0, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
-        nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y - selection_offset, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({0, selection_pos_abs.y - indicator_y - selection_offset, BLOCK_SIZE, tex.right, tex.top, TEXTURE_TRANSPARENT});
-        nglAddVertex({0, selection_pos_abs.y - indicator_y - selection_offset, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
-        break;
-    case AABB::NONE:
-        break;
-    }
-    glEnd();
+        if(pass == 1)
+        {
+            glBindTexture(&gui_crack);
+            tex = textureArea(crack * 16, 0, 16, 16);
+        }
+        const GLFix selection_offset = pass == 0 ? 3 : 5; //Needed to prevent Z-fighting
 
-    glPopMatrix();
+        glPushMatrix();
+        glTranslatef(indicator_x, indicator_y, indicator_z);
+
+        glBegin(GL_QUADS);
+        switch(selection_side)
+        {
+        case AABB::FRONT:
+            nglAddVertex({0, 0, selection_pos_abs.z - indicator_z - selection_offset, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
+            nglAddVertex({0, BLOCK_SIZE, selection_pos_abs.z - indicator_z - selection_offset, tex.left, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({BLOCK_SIZE, BLOCK_SIZE, selection_pos_abs.z - indicator_z - selection_offset, tex.right, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({BLOCK_SIZE, 0, selection_pos_abs.z - indicator_z - selection_offset, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
+            break;
+        case AABB::BACK:
+            nglAddVertex({BLOCK_SIZE, 0, selection_pos_abs.z - indicator_z + selection_offset, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
+            nglAddVertex({BLOCK_SIZE, BLOCK_SIZE, selection_pos_abs.z - indicator_z + selection_offset, tex.left, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({0, BLOCK_SIZE, selection_pos_abs.z - indicator_z + selection_offset, tex.right, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({0, 0, selection_pos_abs.z - indicator_z + selection_offset, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
+            break;
+        case AABB::RIGHT:
+            nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, 0, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
+            nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, BLOCK_SIZE, 0, tex.right, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, BLOCK_SIZE, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({selection_pos_abs.x - indicator_x + selection_offset, 0, BLOCK_SIZE, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
+            break;
+        case AABB::LEFT:
+            nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, 0, BLOCK_SIZE, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
+            nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, BLOCK_SIZE, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, BLOCK_SIZE, 0, tex.right, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({selection_pos_abs.x - indicator_x - selection_offset, 0, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
+            break;
+        case AABB::TOP:
+            nglAddVertex({0, selection_pos_abs.y - indicator_y + selection_offset, 0, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
+            nglAddVertex({0, selection_pos_abs.y - indicator_y + selection_offset, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y + selection_offset, BLOCK_SIZE, tex.right, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y + selection_offset, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
+            break;
+        case AABB::BOTTOM:
+            nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y - selection_offset, 0, tex.left, tex.bottom, TEXTURE_TRANSPARENT});
+            nglAddVertex({BLOCK_SIZE, selection_pos_abs.y - indicator_y - selection_offset, BLOCK_SIZE, tex.left, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({0, selection_pos_abs.y - indicator_y - selection_offset, BLOCK_SIZE, tex.right, tex.top, TEXTURE_TRANSPARENT});
+            nglAddVertex({0, selection_pos_abs.y - indicator_y - selection_offset, 0, tex.right, tex.bottom, TEXTURE_TRANSPARENT});
+            break;
+        case AABB::NONE:
+            break;
+        }
+        glEnd();
+
+        glPopMatrix();
+    }
+    glBindTexture(terrain_current);
 
     glPopMatrix();
 
