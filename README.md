@@ -4,9 +4,8 @@ Crafti Survival Edition
 A survival-mode fork of [crafti](https://github.com/Vogtinator/crafti) by Fabian Vogt: 3D Minecraft for TI-Nspire CX calculators running Ndless.
 The goal is 1.8.8-style survival play (items, mining, mobs, and difficulty levels) on a calculator.
 
-> **Status:** the foundation and the new Eaglercraft-style UI are done.
-> Hold-to-mine, tool wear, block drops and mobs are next.
-> Until mining arrives, breaking a block in survival puts it straight into your inventory.
+> **Status:** survival basics are playable: hold-to-mine with tool tiers, block drops, a day/night cycle,
+> crafting, chests, beds and the smithing table. Furnaces, health and hunger, and mobs are next.
 > Every screenshot below is from the current build.
 
 Screenshots
@@ -18,10 +17,10 @@ Screenshots
 | Survival: hearts, hunger and the 9-slot hotbar | Creative: the same hotbar, without hearts and hunger |
 | ![Game menu](docs/screenshots/menu.png) | ![Options](docs/screenshots/options.png) |
 | Game menu | Options, with Auto-jump and Game Mode |
-| ![Inventory](docs/screenshots/inventory.png) | ![Block list](docs/screenshots/block-list.png) |
-| Survival inventory: 36 slots, counts and wear bars | Creative block list |
-| ![Help](docs/screenshots/help.png) | |
-| Help & Controls | |
+| ![Inventory](docs/screenshots/inventory.png) | ![Crafting table](docs/screenshots/crafting.png) |
+| Survival inventory with the simple recipes | Crafting table: every recipe, with what each one takes |
+| ![Block list](docs/screenshots/block-list.png) | ![Help](docs/screenshots/help.png) |
+| Creative block list | Help & Controls |
 
 All UI art is original: the pixel font, hearts, hunger, item icons and the title wordmark are drawn by scripts in `tools/` (previews in `tools/preview/`). Nothing is copied from Minecraft or Eaglercraft.
 
@@ -40,15 +39,18 @@ What's new so far
 - **Saves:** new save format (v7) with an automatic backup. An unreadable save is never overwritten, and old v6 worlds still load (in creative mode).
 - **Lighting:** 8 brightness levels for the coming day/night cycle.
 - **Auto-jump:** walks you up one-block steps.
+- **Mining:** hold 9 to break blocks at 1.8.8 speeds. Tools have tiers and wear out, and blocks drop items you walk over to collect.
+- **World:** a sun and moon with a day/night cycle, more common emeralds, Ancient Debris near bedrock, and saplings that grow into trees.
+- **Crafting:** a recipe list instead of a 3x3 grid. Your inventory makes planks, sticks, torches and the crafting table; press 7 on a crafting table for tools, furnaces, chests, beds, storage blocks and more.
+- **Chests, beds and the smithing table:** chests hold 27 stacks, beds skip the night and set your spawn, and the smithing table turns diamond tools into netherite.
 - **Stress test:** `crafti-stress.tns` shows FPS and ticks per second on the calculator.
 
 Planned
 -------
 
-- Hold-to-mine with tool tiers and durability, and block drops
+- Furnaces and smelting
+- Health, hunger and damage
 - Zombies, creepers, skeletons, passive animals and a wandering trader
-- More common emeralds, Ancient Debris near bedrock, and netherite tools
-- Crafting, furnaces, chests and beds
 - Difficulties: Peaceful, Easy, Normal, Hard and Torment, plus a Hardcore switch
 
 Building
@@ -61,13 +63,14 @@ Controls
 
 | Key | In the world | In screens |
 |---|---|---|
-| 8 4 6 2 | Walk (auto-jump climbs steps) | Move the cursor |
-| 5 | Jump | Take or put down a stack |
-| 7 | Place block | Take half, or put down one |
-| 9 | Break block | |
+| 8 4 6 2 | Walk (auto-jump climbs steps) | Move the cursor / pick a recipe |
+| 5 | Jump | Take or put down a stack / craft one (hold to repeat) |
+| 7 | Place block, or use a chest, crafting table, bed or smithing table | Take half, or put down one |
+| 9 | Break block (hold in survival) | |
 | 1 / 3 | Previous / next hotbar slot | Pick the hotbar slot (block list) |
 | . | Inventory (creative: block list) | Close |
-| enter | | Send a stack to the other section |
+| enter | | Send a stack to the other section / craft as many as you can |
+| tab | | Switch between the slots and the recipe list |
 | menu | Game menu | Back |
 | esc | Save and quit | Close |
 | + / - | View distance | |

@@ -10,8 +10,8 @@ namespace {
 const char *const controls[][2] = {
     { "8 4 6 2", "Walk (auto-jump climbs steps)" },
     { "5", "Jump" },
-    { "7", "Place block" },
-    { "9", "Break block" },
+    { "7", "Place block, or use a table/chest/bed" },
+    { "9", "Break block (hold in survival)" },
     { "1 / 3", "Previous / next hotbar slot" },
     { ".", "Inventory (creative: block list)" },
     { "Menu", "Game menu" },
@@ -19,6 +19,7 @@ const char *const controls[][2] = {
     { "+ / -", "View distance" },
     { "Ctrl + .", "Screenshot" },
     { "In screens", "5 take/put, 7 half/one, enter send" },
+    { "Recipes", "tab, then 5 craft, enter craft all" },
 };
 
 } // namespace
