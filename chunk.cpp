@@ -5,6 +5,7 @@
 
 #include "world.h"
 #include "chunk.h"
+#include "oregen.h"
 #include "lighting.h"
 #include "fastmath.h"
 #include "blockrenderer.h"
@@ -607,6 +608,9 @@ void Chunk::generate()
                 trees++;
             }
         }
+
+    // Gold, emerald and Ancient Debris (new chunks only: loaded ones skip generate()).
+    generateOres(blocks, this->x, this->y, this->z, world.worldSeed());
 
     debug("Done!\n");
 }

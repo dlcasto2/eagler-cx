@@ -7,3 +7,4 @@
 *.includes
 *.config
 tests/run_tests
+tools/__pycache__/

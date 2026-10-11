@@ -21,6 +21,14 @@ TEST_CASE("light sources") {
     CHECK(blockDef(BLOCK_LAVA).light == 15); CHECK(blockDef(BLOCK_STONE).light == 0);
 }
 TEST_CASE("every existing block is defined") {
-    for (int b = 1; b <= BLOCK_NORMAL_LAST; ++b) CHECK(blockDef(b).defined);
+    for (int b = 1; b <= BLOCK_NORMAL_LAST; ++b)
+        if (b != 30 && b != 32)   // reserved for wool and block of emerald
+            CHECK(blockDef(b).defined);
     for (int b : {127, 128, 129, 130, 131, 132, 133, 134, 135, 146, 147, 148, 149, 150}) CHECK(blockDef(b).defined);
+}
+TEST_CASE("emerald ore and Ancient Debris") {
+    const BlockDef &e = blockDef(BLOCK_EMERALD_ORE), &d = blockDef(BLOCK_ANCIENT_DEBRIS);
+    CHECK(e.hardness_x100 == 300); CHECK(e.min_tier == 3); CHECK(e.drop.item == ITEM_EMERALD);
+    CHECK(d.hardness_x100 == 3000); CHECK(d.min_tier == 4); CHECK(d.blast_proof);
+    CHECK(d.drop.item == DROP_SELF);
 }

@@ -4,6 +4,7 @@
 
 #include "textures/terrain.h"
 #include "textures/inv_selection.h"
+#include "block_art.h"
 
 const char *block_names[BLOCK_NORMAL_LAST + 1] =
 {
@@ -36,7 +37,11 @@ const char *block_names[BLOCK_NORMAL_LAST + 1] =
     "Iron block",
     "Gold block",
     "Diamond block",
-    "Netherrack"
+    "Netherrack",
+    "Wool",              // 30: reserved
+    "Emerald Ore",
+    "Block of Emerald",  // 32: reserved
+    "Ancient Debris"
 };
 
 struct BLOCK_TEXTURE {
@@ -64,7 +69,7 @@ static const BLOCK_TEXTURE texture_atlas[][16] =
     { NON, ALL(BLOCK_BEDROCK), ALL(BLOCK_SAND), ALL(BLOCK_COBBLESTONE), SID(BLOCK_WOOD), TAB(BLOCK_WOOD), ALL(BLOCK_IRON), ALL(BLOCK_GOLD), ALL(BLOCK_DIAMOND), NON, NON, NON, NON, NON, NON, NON },
     { ALL(BLOCK_GOLD_ORE), ALL(BLOCK_IRON_ORE), ALL(BLOCK_COAL_ORE), FRO(BLOCK_BOOKSHELF), NON, NON, NON, NON, NON, NON, NON, TAB(BLOCK_CRAFTING_TABLE), FRO(BLOCK_FURNACE), SWF(BLOCK_FURNACE), NON, NON },
     { ALL(BLOCK_SPONGE), ALL(BLOCK_GLASS), ALL(BLOCK_DIAMOND_ORE), ALL(BLOCK_REDSTONE_ORE), NON, ALL(BLOCK_LEAVES), NON, NON, NON, NON, NON, SID(BLOCK_CRAFTING_TABLE), FRO(BLOCK_CRAFTING_TABLE), NON, TOP(BLOCK_FURNACE), NON },
-    { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
+    { ALL(BLOCK_EMERALD_ORE), SID(BLOCK_ANCIENT_DEBRIS), TAB(BLOCK_ANCIENT_DEBRIS), NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON }, // painted by block_art_paint.cpp
     { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
     { NON, NON, NON, NON, NON, NON, TAB(BLOCK_PUMPKIN), ALL(BLOCK_NETHERRACK), NON, ALL(BLOCK_GLOWSTONE), NON, NON, NON, NON, NON, NON},
     { NON, NON, NON, NON, NON, NON, SWF(BLOCK_PUMPKIN), FRO(BLOCK_PUMPKIN), NON, NON, NON, NON, NON, NON, NON, NON },
@@ -165,6 +170,9 @@ void terrainInit(const char *texture_path)
     drawTexture(*terrain_current, *terrain_current, 0 * field_width, 6 * field_height, field_width, field_height, 10 * field_width, 15 * field_height, field_width, field_height);
     const RGB red_tint = { 1.0f, 0.8f, 0.8f };
     makeColor(red_tint, *terrain_current, 10 * field_width, 15 * field_height, field_width, field_height);
+
+    // Blocks added by Survival Edition, drawn into free cells of row 4.
+    paintAddedBlockTextures(*terrain_current, field_width, field_height);
 
     // Water has opacity of 0.5 but it's not rendered with alpha here.
     makeWaterOpaque(*terrain_current, 13 * field_width, 12 * field_height, field_width, field_height);

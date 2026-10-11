@@ -17,7 +17,7 @@ extern const uint8_t gui_font_rows[95][9];
 extern TEXTURE gui_hud;
 enum HudIcon { HUD_HEART = 0, HUD_HEART_HALF, HUD_HEART_EMPTY, HUD_FOOD, HUD_FOOD_HALF, HUD_FOOD_EMPTY, HUD_BUBBLE, HUD_BUBBLE_POP };
 
-// Ten 16x16 block-breaking stages in a row.
+// Ten 16x16 block-breaking stages in a row (black is transparent: drawn in 3D).
 extern TEXTURE gui_crack;
 
 // The "CRAFTI" wordmark for the menu.

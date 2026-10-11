@@ -405,7 +405,6 @@ def main():
 
     images = {
         'gui_hud': hud_strip(),
-        'gui_crack': crack_strip(),
         'gui_title': title_logo(),
     }
 
@@ -433,7 +432,7 @@ def main():
         img.save_preview(os.path.join(preview, name + '.png'))
 
     # Drawn in the 3D sky by nGL, which treats black (0x0000) as transparent.
-    for name, img in (('gui_sun', sun_disc()), ('gui_moon', moon_disc())):
+    for name, img in (('gui_crack', crack_strip()), ('gui_sun', sun_disc()), ('gui_moon', moon_disc())):
         out.append(c_array(name, img.to565(key=0x0000)))
         out.append('TEXTURE %s = { %d, %d, true, 0x0000, %s_data };' % (name, img.w, img.h, name))
         out.append('')

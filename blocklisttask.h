@@ -16,7 +16,7 @@ public:
     int current_selection;
 
 private:
-    static const int fields_x = 9, fields_y = 5;
+    static const int fields_x = 9, fields_y = 6;
     static const int panel_width = 176, panel_height = 18 + fields_y * 18 + 4 + 18 + 7;
 };
 
