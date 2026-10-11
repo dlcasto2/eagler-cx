@@ -141,15 +141,18 @@ TEST_CASE("swords wear double, instant blocks and non-tools don't wear") {
     CHECK(toolWearFor(0, BLOCK_DIRT) == 0);
 }
 
-TEST_CASE("leaves sometimes drop an apple") {
-    uint32_t rng = 42; int apples = 0, other = 0;
+TEST_CASE("leaves drop saplings 1 in 20 and apples 1 in 200") {
+    uint32_t rng = 42; int apples = 0, saplings = 0, other = 0;
     for(int i = 0; i < 20000; ++i)
     {
         const ItemStack s = blockDropFor(BLOCK_LEAVES, 0, rng);
-        if(s.id == ITEM_APPLE) ++apples; else if(!s.empty()) ++other;
+        if(s.id == ITEM_APPLE) ++apples;
+        else if(s.id == BLOCK_SAPLING) ++saplings;
+        else if(!s.empty()) ++other;
     }
     CHECK(other == 0);
-    CHECK(apples > 60); CHECK(apples < 140);   // 0.5% of 20000 = 100
+    CHECK(saplings > 850); CHECK(saplings < 1150);   // 5% of 20000 = 1000
+    CHECK(apples > 60); CHECK(apples < 140);         // 0.5% of 20000 = 100
 }
 
 TEST_CASE("emeralds need iron, Ancient Debris needs diamond") {
@@ -162,4 +165,14 @@ TEST_CASE("emeralds need iron, Ancient Debris needs diamond") {
     CHECK(blockDropFor(BLOCK_ANCIENT_DEBRIS, DIAMOND_PICK, rng).id == BLOCK_ANCIENT_DEBRIS);
     // hardness 30 with a diamond pickaxe: 30 * 30 / 8 = 112.5 ticks, about 5.6 s
     CHECK(miningTicks(BLOCK_ANCIENT_DEBRIS, DIAMOND_PICK, false, true) == 113);
+}
+
+TEST_CASE("the new survival blocks") {
+    uint32_t rng = 1;
+    CHECK(miningTicks(BLOCK_WOOL, 0, false, true) == 24);          // hardness 0.8 by hand: 1.2 s
+    CHECK(blockDropFor(BLOCK_WOOL, 0, rng).id == BLOCK_WOOL);
+    CHECK(miningTicks(BLOCK_SAPLING, 0, false, true) == 0);        // instant
+    CHECK(blockDropFor(BLOCK_SAPLING, 0, rng).id == BLOCK_SAPLING);
+    CHECK_FALSE(canHarvest(BLOCK_EMERALD_BLOCK, STONE_PICK));
+    CHECK(blockDropFor(BLOCK_EMERALD_BLOCK, IRON_PICK, rng).id == BLOCK_EMERALD_BLOCK);
 }

@@ -10,6 +10,7 @@
 #include "gamestate.h"
 #include "daylight.h"
 #include "mining.h"
+#include "saplingrenderer.h"
 #include "drops.h"
 #include "gui_art.h"
 #include "particle.h"
@@ -239,6 +240,10 @@ void WorldTask::logic()
         }
 
         current_block = world.getBlock(pos.x, pos.y, pos.z);
+
+        // Saplings only take root on dirt or grass
+        if(getBLOCK(block_to_place) == BLOCK_SAPLING && !SaplingRenderer::canStayOn(getBLOCK(world.getBlock(pos.x, pos.y - 1, pos.z))))
+            return;
 
         //Only set the block if there's air
         if(current_block == BLOCK_AIR || (in_water && getBLOCK(current_block) == BLOCK_WATER))

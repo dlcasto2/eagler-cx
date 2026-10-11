@@ -35,6 +35,8 @@ bool buildTable()
     def(BLOCK_DIAMOND_ORE, 300, PICK, 3, drops(ITEM_DIAMOND));
     def(BLOCK_DIAMOND, 500, PICK, 3);
     def(BLOCK_EMERALD_ORE, 300, PICK, 3, drops(ITEM_EMERALD));
+    def(BLOCK_EMERALD_BLOCK, 500, PICK, 3);
+    def(BLOCK_WOOL, 80, NONE, 0);
     def(BLOCK_ANCIENT_DEBRIS, 3000, PICK, 4, SELF, 0, true);   // needs diamond; survives explosions
     def(BLOCK_REDSTONE_ORE, 300, PICK, 3, drops(ITEM_REDSTONE_DUST, 4, 5));
     def(BLOCK_PRESSURE_PLATE, 50, PICK, 1);
@@ -52,7 +54,7 @@ bool buildTable()
     def(BLOCK_PUMPKIN, 100, AXE, 0);
     def(BLOCK_DOOR, 300, AXE, 0);
 
-    def(BLOCK_LEAVES, 20, NONE, 0, BlockDrop{ ITEM_APPLE, 1, 1, 5 });   // oak leaves: 1 in 200
+    def(BLOCK_LEAVES, 20, NONE, 0, NOTHING);   // sapling 1 in 20 or apple 1 in 200: see mining.cpp
     def(BLOCK_GLASS, 30, NONE, 0, NOTHING);
     def(BLOCK_GLOWSTONE, 30, NONE, 0, SELF, 15);
     def(BLOCK_REDSTONE_LAMP, 30, NONE, 0, SELF, 15);   // only while lit; checked in Phase 5
@@ -63,6 +65,7 @@ bool buildTable()
     def(BLOCK_TNT, 0, NONE, 0);
     def(BLOCK_TORCH, 0, NONE, 0, SELF, 14);
     def(BLOCK_FLOWER, 0, NONE, 0);
+    def(BLOCK_SAPLING, 0, NONE, 0);
     def(BLOCK_MUSHROOM, 0, NONE, 0);
     def(BLOCK_REDSTONE_TORCH, 0, NONE, 0, SELF, 7);
     def(BLOCK_WHEAT, 0, NONE, 0, drops(ITEM_WHEAT));

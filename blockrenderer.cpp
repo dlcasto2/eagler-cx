@@ -14,6 +14,7 @@
 #include "tntrenderer.h"
 #include "torchrenderer.h"
 #include "wheatrenderer.h"
+#include "saplingrenderer.h"
 #include "wirerenderer.h"
 
 UniversalBlockRenderer global_block_renderer;
@@ -356,8 +357,6 @@ UniversalBlockRenderer::UniversalBlockRenderer()
     }
 
     map[BLOCK_AIR] = null_renderer;
-    map[30] = null_renderer;   // reserved: wool
-    map[32] = null_renderer;   // reserved: block of emerald
     map[BLOCK_BOOKSHELF] = oriented_renderer;
     map[BLOCK_CAKE] = std::make_shared<CakeRenderer>();
     map[BLOCK_CRAFTING_TABLE] = oriented_renderer;
@@ -381,6 +380,7 @@ UniversalBlockRenderer::UniversalBlockRenderer()
     map[BLOCK_WATER] = std::make_shared<FluidRenderer>(13, 12, "Water");
     map[BLOCK_LAVA] = std::make_shared<FluidRenderer>(13, 14, "Lava");
     map[BLOCK_WHEAT] = std::make_shared<WheatRenderer>();
+    map[BLOCK_SAPLING] = std::make_shared<SaplingRenderer>();
     map[BLOCK_WOOD] = color_renderer;
 
     auto flower_renderer = std::make_shared<BillboardRenderer>();
