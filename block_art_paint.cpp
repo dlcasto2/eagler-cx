@@ -26,4 +26,12 @@ void paintAddedBlockTextures(TEXTURE &terrain, int fw, int fh)
 {
     paint(art_debris_side, terrain, DEBRIS_SIDE_CELL, ART_ROW, fw, fh);
     paint(art_debris_top, terrain, DEBRIS_TOP_CELL, ART_ROW, fw, fh);
+
+    // The stock atlas has blank placeholders where these would go.
+    paint(art_chest_top, terrain, 10, 1, fw, fh);
+    paint(art_chest_side, terrain, 11, 1, fw, fh);
+    paint(art_chest_front, terrain, 9, 2, fw, fh);
+    paint(art_smithing_top, terrain, 10, 2, fw, fh);
+    paint(art_smithing_side, terrain, 9, 3, fw, fh);
+    paint(art_smithing_front, terrain, 10, 3, fw, fh);
 }

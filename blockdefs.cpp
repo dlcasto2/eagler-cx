@@ -50,6 +50,8 @@ bool buildTable()
     def(BLOCK_PLANKS_DARK, 200, AXE, 0);
     def(BLOCK_PLANKS_BRIGHT, 200, AXE, 0);
     def(BLOCK_CRAFTING_TABLE, 250, AXE, 0);
+    def(BLOCK_SMITHING_TABLE, 250, AXE, 0);
+    def(BLOCK_CHEST, 250, AXE, 0);
     def(BLOCK_BOOKSHELF, 150, AXE, 0);
     def(BLOCK_PUMPKIN, 100, AXE, 0);
     def(BLOCK_DOOR, 300, AXE, 0);
@@ -66,6 +68,7 @@ bool buildTable()
     def(BLOCK_TORCH, 0, NONE, 0, SELF, 14);
     def(BLOCK_FLOWER, 0, NONE, 0);
     def(BLOCK_SAPLING, 0, NONE, 0);
+    def(BLOCK_BED, 20, NONE, 0);
     def(BLOCK_MUSHROOM, 0, NONE, 0);
     def(BLOCK_REDSTONE_TORCH, 0, NONE, 0, SELF, 7);
     def(BLOCK_WHEAT, 0, NONE, 0, drops(ITEM_WHEAT));

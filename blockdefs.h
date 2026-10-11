@@ -8,9 +8,6 @@
 
 // Mining and lighting properties per block, 1.8.8 values.
 //
-// Block IDs reserved for later phases (not defined yet):
-//   normal:  34 smithing table
-//   special: 151 chest, 152 bed
 
 constexpr uint16_t UNBREAKABLE = 0xFFFF;
 constexpr ItemId DROP_SELF = 0xFFFF;

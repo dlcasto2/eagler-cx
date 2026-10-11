@@ -30,6 +30,9 @@ private:
     void crosshairPixel(int x, int y);
     void renderSky();
     void tickMining(bool on_ground);
+    bool useBlock(int bx, int by, int bz);          // 7 on a chest, smithing table or bed
+    bool placeBed(int fx, int fy, int fz);
+    void removeBlock(int bx, int by, int bz, BLOCK_WDATA target);   // with chest contents and bed halves
 
     void getForward(GLFix *x, GLFix *z);
     void getRight(GLFix *x, GLFix *z);
@@ -48,6 +51,9 @@ private:
 
     MiningState mining;
     uint32_t drop_rng = 0x5eed;
+
+    static constexpr int SLEEP_FADE_TICKS = 40;   // two seconds of fading
+    int sleep_ticks = 0, sleep_x = 0, sleep_y = 0, sleep_z = 0;
 
     #ifdef STRESS_TEST
         bool stress_spawned = false;

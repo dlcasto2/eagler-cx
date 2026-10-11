@@ -44,7 +44,9 @@ constexpr BLOCK BLOCK_WOOL = 30;
 constexpr BLOCK BLOCK_EMERALD_ORE = 31;
 constexpr BLOCK BLOCK_EMERALD_BLOCK = 32;
 constexpr BLOCK BLOCK_ANCIENT_DEBRIS = 33;
-constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_ANCIENT_DEBRIS;
+constexpr BLOCK BLOCK_SMITHING_TABLE = 34; //Data: Direction (BLOCK_SIDE)
+constexpr BLOCK BLOCK_CHEST = 35; //Data: Direction (BLOCK_SIDE); contents in block_storage
+constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_CHEST;
 
 //Special blocks begin here
 constexpr int BLOCK_SPECIAL_START = 127;
@@ -63,7 +65,8 @@ constexpr BLOCK BLOCK_REDSTONE_SWITCH = 147; //Data: BLOCK_SIDE
 constexpr BLOCK BLOCK_REDSTONE_WIRE = 148; //Data: (active: 1<<6, visited: 1<<5)
 constexpr BLOCK BLOCK_REDSTONE_TORCH = 149; //Data: See BLOCK_TORCH
 constexpr BLOCK BLOCK_PRESSURE_PLATE = 150; //Data: How many ticks kept active
-constexpr BLOCK BLOCK_SPECIAL_LAST = BLOCK_PRESSURE_PLATE;
+constexpr BLOCK BLOCK_BED = 151; //Data: facing (BLOCK_SIDE) | 8 on the head half, see containers.h
+constexpr BLOCK BLOCK_SPECIAL_LAST = BLOCK_BED;
 
 constexpr uint8_t RANGE_WATER = 5;
 constexpr uint8_t RANGE_LAVA = 3;

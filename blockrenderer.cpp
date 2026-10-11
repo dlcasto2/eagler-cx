@@ -15,6 +15,7 @@
 #include "torchrenderer.h"
 #include "wheatrenderer.h"
 #include "saplingrenderer.h"
+#include "bedrenderer.h"
 #include "wirerenderer.h"
 
 UniversalBlockRenderer global_block_renderer;
@@ -360,6 +361,9 @@ UniversalBlockRenderer::UniversalBlockRenderer()
     map[BLOCK_BOOKSHELF] = oriented_renderer;
     map[BLOCK_CAKE] = std::make_shared<CakeRenderer>();
     map[BLOCK_CRAFTING_TABLE] = oriented_renderer;
+    map[BLOCK_SMITHING_TABLE] = oriented_renderer;
+    map[BLOCK_CHEST] = oriented_renderer;
+    map[BLOCK_BED] = std::make_shared<BedRenderer>();
     map[BLOCK_DIRT] = color_renderer;
     map[BLOCK_DOOR] = std::make_shared<DoorRenderer>();
     map[BLOCK_FURNACE] = oriented_renderer;

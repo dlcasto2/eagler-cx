@@ -22,7 +22,7 @@ TEST_CASE("light sources") {
 }
 TEST_CASE("every existing block is defined") {
     for (int b = 1; b <= BLOCK_NORMAL_LAST; ++b) CHECK(blockDef(b).defined);
-    for (int b : {127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 146, 147, 148, 149, 150}) CHECK(blockDef(b).defined);
+    for (int b : {127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 146, 151, 147, 148, 149, 150}) CHECK(blockDef(b).defined);
 }
 TEST_CASE("emerald ore and Ancient Debris") {
     const BlockDef &e = blockDef(BLOCK_EMERALD_ORE), &d = blockDef(BLOCK_ANCIENT_DEBRIS);

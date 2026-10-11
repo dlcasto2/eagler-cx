@@ -11,6 +11,11 @@
 #include "daylight.h"
 #include "mining.h"
 #include "saplingrenderer.h"
+#include "containers.h"
+#include "blockstorage.h"
+#include "chestscreen.h"
+#include "smithingscreen.h"
+#include "itempile.h"
 #include "drops.h"
 #include "gui_art.h"
 #include "particle.h"
@@ -181,6 +186,9 @@ void WorldTask::logic()
         if(selection_side == AABB::NONE)
             return;
 
+        if(useBlock(static_cast<int>(selection_pos.x), static_cast<int>(selection_pos.y), static_cast<int>(selection_pos.z)))
+            return;
+
         if(world.intersect(aabb))
             return;
 
@@ -241,6 +249,13 @@ void WorldTask::logic()
 
         current_block = world.getBlock(pos.x, pos.y, pos.z);
 
+        if(getBLOCK(block_to_place) == BLOCK_BED)
+        {
+            if(placeBed(static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(pos.z)))
+                useOne();
+            return;
+        }
+
         // Saplings only take root on dirt or grass
         if(getBLOCK(block_to_place) == BLOCK_SAPLING && !SaplingRenderer::canStayOn(getBLOCK(world.getBlock(pos.x, pos.y - 1, pos.z))))
             return;
@@ -264,17 +279,18 @@ void WorldTask::logic()
             if(world.intersect(aabb))
                 world.changeBlock(pos.x, pos.y, pos.z, current_block);
             else
+            {
+                if(getBLOCK(block_to_place) == BLOCK_CHEST)
+                    chestPlaced(static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(pos.z));
                 useOne();
+            }
         }
     }
     else if(keyPressed(KEY_NSPIRE_9) && player_state.mode != GameMode::SURVIVAL) //Remove block (creative: instantly)
     {
         const BLOCK_WDATA target = selection_side == AABB::NONE ? BLOCK_AIR : world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z);
         if(selection_side != AABB::NONE && target != BLOCK_BEDROCK)
-        {
-            world.spawnDestructionParticles(selection_pos.x, selection_pos.y, selection_pos.z);
-            world.changeBlock(selection_pos.x, selection_pos.y, selection_pos.z, BLOCK_AIR);
-        }
+            removeBlock(static_cast<int>(selection_pos.x), static_cast<int>(selection_pos.y), static_cast<int>(selection_pos.z), target);
 
         key_held_down = true;
     }
@@ -381,6 +397,15 @@ void WorldTask::tick()
     else
         mining = MiningState();
     collectDrops(entity_pool, box, player_inventory);
+    collectPiles(entity_pool, item_piles, box, player_inventory);
+    removeExpiredPiles(entity_pool, item_piles);
+
+    // Sleeping: the screen fades, then it's morning.
+    if(sleep_ticks > 0 && --sleep_ticks == 0)
+    {
+        sleepInBed(sleep_x, sleep_y, sleep_z);
+        setMessage("Good morning. Spawn point set.");
+    }
 
     world_state.time_of_day = (world_state.time_of_day + 1) % DAY_TICKS;
     world.setBrightnessAll(skyBrightnessLevel(world_state.time_of_day));
@@ -435,6 +460,88 @@ void WorldTask::renderSky()
     glBindTexture(terrain_current);
 }
 
+bool WorldTask::useBlock(int bx, int by, int bz)
+{
+    const BLOCK_WDATA target = world.getBlock(bx, by, bz);
+    const BLOCK b = getBLOCK(target);
+    if(b != BLOCK_CHEST && b != BLOCK_SMITHING_TABLE && b != BLOCK_BED)
+        return false;
+
+    if(b == BLOCK_BED)
+    {
+        switch(canSleep(world_state.time_of_day, world_state.difficulty))
+        {
+        case SleepCheck::OK:
+            sleep_ticks = SLEEP_FADE_TICKS;
+            sleep_x = bx; sleep_y = by; sleep_z = bz;
+            break;
+        case SleepCheck::NOT_NIGHT:
+            setMessage("You can only sleep at night.");
+            break;
+        case SleepCheck::TORMENT:
+            setMessage("The bed is cold. Something is awake.");
+            break;
+        }
+        return true;
+    }
+
+    // Open the screen over a clean frame of the world.
+    draw_inventory = false;
+    render();
+    draw_inventory = true;
+    if(b == BLOCK_CHEST)
+        chest_screen.open(bx, by, bz);
+    else
+        smithing_screen.makeCurrent();
+    return true;
+}
+
+bool WorldTask::placeBed(int fx, int fy, int fz)
+{
+    // The foot goes where you aimed, the head one block further the way you face.
+    const BLOCK_SIDE facing = bedFacingFromYaw(static_cast<int>(yr));
+    int dx, dz;
+    sideOffset(facing, dx, dz);
+    const int hx = fx + dx, hz = fz + dz;
+    if(world.getBlock(fx, fy, fz) != BLOCK_AIR || world.getBlock(hx, fy, hz) != BLOCK_AIR)
+        return false;
+    if(!global_block_renderer.isObstacle(world.getBlock(fx, fy - 1, fz)) || !global_block_renderer.isObstacle(world.getBlock(hx, fy - 1, hz)))
+        return false;
+
+    world.changeBlock(fx, fy, fz, getBLOCKWDATA(BLOCK_BED, bedData(facing, false)));
+    world.changeBlock(hx, fy, hz, getBLOCKWDATA(BLOCK_BED, bedData(facing, true)));
+    if(world.intersect(aabb))
+    {
+        world.changeBlock(fx, fy, fz, BLOCK_AIR);
+        world.changeBlock(hx, fy, hz, BLOCK_AIR);
+        return false;
+    }
+    return true;
+}
+
+void WorldTask::removeBlock(int bx, int by, int bz, BLOCK_WDATA target)
+{
+    world.spawnDestructionParticles(bx, by, bz);
+    world.changeBlock(bx, by, bz, BLOCK_AIR);
+
+    const GLFix cx = bx * BLOCK_SIZE + BLOCK_SIZE / 2, cy = by * BLOCK_SIZE + BLOCK_SIZE / 2, cz = bz * BLOCK_SIZE + BLOCK_SIZE / 2;
+    if(getBLOCK(target) == BLOCK_CHEST)
+    {
+        // Everything inside comes out as one pile.
+        const std::vector<ItemStack> contents = chestBroken(bx, by, bz);
+        if(!contents.empty())
+            dropPile(entity_pool, item_piles, cx, cy, cz, contents.data(), static_cast<int>(contents.size()), player_inventory);
+    }
+    else if(getBLOCK(target) == BLOCK_BED)
+    {
+        // Either half takes the whole bed with it (one bed drops).
+        int ox, oz;
+        bedOtherHalf(bx, bz, getBLOCKDATA(target), ox, oz);
+        if(getBLOCK(world.getBlock(ox, by, oz)) == BLOCK_BED)
+            world.changeBlock(ox, by, oz, BLOCK_AIR);
+    }
+}
+
 void WorldTask::tickMining(bool on_ground)
 {
     const bool has_target = selection_side != AABB::NONE;
@@ -449,8 +556,7 @@ void WorldTask::tickMining(bool on_ground)
     // 1.8.8 order: work out the drop, clear the block, drop it, then wear the tool,
     // so a tool that breaks on its last block still gives that block.
     const ItemStack drop = blockDropFor(target, tool, drop_rng);
-    world.spawnDestructionParticles(bx, by, bz);
-    world.changeBlock(bx, by, bz, BLOCK_AIR);
+    removeBlock(bx, by, bz, target);
     spawnDrop(entity_pool, GLFix(bx * BLOCK_SIZE + BLOCK_SIZE / 2), GLFix(by * BLOCK_SIZE + BLOCK_SIZE / 2),
               GLFix(bz * BLOCK_SIZE + BLOCK_SIZE / 2), drop, player_inventory);
     wearTool(held, toolWearFor(tool, target));
@@ -589,6 +695,14 @@ void WorldTask::render()
             drawPixelTextCenter(*screen, name, SCREEN_WIDTH / 2, top - 9, ui::TEXT_WHITE);
     }
 
+    if(sleep_ticks > 0)
+    {
+        // darker and darker as the night is skipped
+        const int passes = 1 + (SLEEP_FADE_TICKS - sleep_ticks) * 4 / SLEEP_FADE_TICKS;
+        for(int i = 0; i < passes; ++i)
+            darkenRect(*screen, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+
     if(message_timeout > 0)
     {
         drawPixelText(*screen, message, 3, 3, ui::TEXT_WHITE);
@@ -621,6 +735,12 @@ void WorldTask::resetWorld()
     world.generateSeed();
     world.clear();
     current_inventory.resetToDefaults();
+    // Nothing from the previous world carries over.
+    block_storage.clear();
+    item_piles.clear();
+    entity_pool = EntityPool();
+    mining = MiningState();
+    sleep_ticks = 0;
 }
 
 void WorldTask::setMessage(const char *message)

@@ -77,3 +77,119 @@ void collectDrops(EntityPool &pool, const AABB &player, PlayerInventory &inv)
             e.item.count = static_cast<uint8_t>(left);
     });
 }
+
+namespace {
+
+constexpr int PILE_HALF = 24;
+
+AABB pileBox(GLFix cx, GLFix cy, GLFix cz)
+{
+    return AABB(cx - PILE_HALF, cy - PILE_HALF, cz - PILE_HALF, cx + PILE_HALF, cy + PILE_HALF, cz + PILE_HALF);
+}
+
+} // namespace
+
+bool dropPile(EntityPool &pool, ItemPileStore &piles, GLFix cx, GLFix cy, GLFix cz,
+              const ItemStack *stacks, int n, PlayerInventory &overflow)
+{
+    ItemPile pile;
+    pile.x = cx; pile.y = cy; pile.z = cz;
+    pile.age_ticks = 0;
+    int used = 0;
+    for(int i = 0; i < n; ++i)
+        if(!stacks[i].empty() && used < PlayerInventory::SLOTS)
+            pile.stacks[used++] = stacks[i];
+    for(int i = used; i < PlayerInventory::SLOTS; ++i)
+        pile.stacks[i] = ItemStack();
+    if(used == 0)
+        return true;
+
+    const int index = piles.add(pile);
+    if(index >= 0)
+    {
+        if(Entity *e = pool.spawn(EntityType::ITEM_PILE, pileBox(cx, cy, cz)))
+        {
+            e->pile_index = static_cast<uint8_t>(index);
+            e->vy = 6;
+            return true;
+        }
+        piles.remove(index);
+    }
+
+    // No room for a pile: fall back to single drops.
+    bool all = true;
+    for(int i = 0; i < used; ++i)
+        all = spawnDrop(pool, cx, cy, cz, pile.stacks[i], overflow) && all;
+    return all;
+}
+
+void collectPiles(EntityPool &pool, ItemPileStore &piles, const AABB &player, PlayerInventory &inv)
+{
+    AABB reach(player.low_x - BLOCK_SIZE, player.low_y - BLOCK_SIZE, player.low_z - BLOCK_SIZE,
+               player.high_x + BLOCK_SIZE, player.high_y + BLOCK_SIZE / 2, player.high_z + BLOCK_SIZE);
+
+    pool.forEach([&](Entity &e) {
+        if(e.type != EntityType::ITEM_PILE || e.age_ticks < PICKUP_DELAY_TICKS || !reach.intersects(e.box))
+            return;
+        ItemPile *p = piles.get(e.pile_index);
+        if(!p)
+        {
+            pool.remove(&e);
+            return;
+        }
+        bool empty = true;
+        for(ItemStack &s : p->stacks)
+        {
+            if(s.empty())
+                continue;
+            const unsigned left = inv.add(s);
+            if(left == 0)
+                s = ItemStack();
+            else
+            {
+                s.count = static_cast<uint8_t>(left);
+                empty = false;
+            }
+        }
+        if(empty)
+        {
+            piles.remove(e.pile_index);
+            pool.remove(&e);
+        }
+    });
+}
+
+void respawnPiles(EntityPool &pool, ItemPileStore &piles)
+{
+    for(int i = 0; i < ItemPileStore::CAPACITY; ++i)
+    {
+        ItemPile *p = piles.get(i);
+        if(!p)
+            continue;
+        if(Entity *e = pool.spawn(EntityType::ITEM_PILE, pileBox(p->x, p->y, p->z)))
+        {
+            e->pile_index = static_cast<uint8_t>(i);
+            e->age_ticks = p->age_ticks;
+        }
+    }
+}
+
+void removeExpiredPiles(EntityPool &pool, ItemPileStore &piles)
+{
+    pool.forEach([&](Entity &e) {
+        if(e.type != EntityType::ITEM_PILE)
+            return;
+        ItemPile *p = piles.get(e.pile_index);
+        if(!p || e.age_ticks >= DESPAWN_TICKS)
+        {
+            piles.remove(e.pile_index);
+            pool.remove(&e);
+            return;
+        }
+        // keep the saved copy where the entity is, and as old
+        p->age_ticks = e.age_ticks;
+        p->x = (e.box.low_x + e.box.high_x) / 2;
+        p->y = (e.box.low_y + e.box.high_y) / 2;
+        p->z = (e.box.low_z + e.box.high_z) / 2;
+    });
+}
