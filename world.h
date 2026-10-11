@@ -40,6 +40,8 @@ public:
     int fieldOfView() const { return field_of_view; }
     void setFieldOfView(int fov) { field_of_view = fov; loaded = false; }
     Chunk *findChunk(int x, int y, int z) const;
+    // Whether the chunk holding this block is loaded.
+    bool isLoaded(int x, int y, int z) const;
     void spawnDestructionParticles(int x, int y, int z);
 
     static constexpr int HEIGHT = 5;

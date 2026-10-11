@@ -5,7 +5,7 @@ A survival-mode fork of [crafti](https://github.com/Vogtinator/crafti) by Fabian
 The goal is 1.8.8-style survival play (items, mining, mobs, and difficulty levels) on a calculator.
 
 > **Status:** survival basics are playable: hold-to-mine with tool tiers, block drops, a day/night cycle,
-> crafting, chests, beds and the smithing table. Furnaces, health and hunger, and mobs are next.
+> crafting, furnaces, chests, beds and the smithing table. Health and hunger, then mobs, are next.
 > Every screenshot below is from the current build.
 
 Screenshots
@@ -19,8 +19,10 @@ Screenshots
 | Game menu | Options, with Auto-jump and Game Mode |
 | ![Inventory](docs/screenshots/inventory.png) | ![Crafting table](docs/screenshots/crafting.png) |
 | Survival inventory with the simple recipes | Crafting table: every recipe, with what each one takes |
-| ![Block list](docs/screenshots/block-list.png) | ![Help](docs/screenshots/help.png) |
-| Creative block list | Help & Controls |
+| ![Furnace](docs/screenshots/furnace.png) | ![Help](docs/screenshots/help.png) |
+| Furnace: input, fuel and output, with the flame and progress arrow | Help & Controls |
+| ![Block list](docs/screenshots/block-list.png) | |
+| Creative block list | |
 
 All UI art is original: the pixel font, hearts, hunger, item icons and the title wordmark are drawn by scripts in `tools/` (previews in `tools/preview/`). Nothing is copied from Minecraft or Eaglercraft.
 
@@ -42,13 +44,13 @@ What's new so far
 - **Mining:** hold 9 to break blocks at 1.8.8 speeds. Tools have tiers and wear out, and blocks drop items you walk over to collect.
 - **World:** a sun and moon with a day/night cycle, more common emeralds, Ancient Debris near bedrock, and saplings that grow into trees.
 - **Crafting:** a recipe list instead of a 3x3 grid. Your inventory makes planks, sticks, torches and the crafting table; press 7 on a crafting table for tools, furnaces, chests, beds, storage blocks and more.
+- **Furnaces:** input, fuel and output slots; each item takes 10 seconds. Coal or charcoal smelts 8 items, a log or plank 1.5. Smelts ores to ingots, sand to glass, cobblestone to stone, raw meat, logs to charcoal and Ancient Debris to netherite scrap. Furnaces keep cooking while their chunk is loaded, and while you watch.
 - **Chests, beds and the smithing table:** chests hold 27 stacks, beds skip the night and set your spawn, and the smithing table turns diamond tools into netherite.
 - **Stress test:** `crafti-stress.tns` shows FPS and ticks per second on the calculator.
 
 Planned
 -------
 
-- Furnaces and smelting
 - Health, hunger and damage
 - Zombies, creepers, skeletons, passive animals and a wandering trader
 - Difficulties: Peaceful, Easy, Normal, Hard and Torment, plus a Hardcore switch
@@ -65,7 +67,7 @@ Controls
 |---|---|---|
 | 8 4 6 2 | Walk (auto-jump climbs steps) | Move the cursor / pick a recipe |
 | 5 | Jump | Take or put down a stack / craft one (hold to repeat) |
-| 7 | Place block, or use a chest, crafting table, bed or smithing table | Take half, or put down one |
+| 7 | Place block, or use a chest, furnace, crafting table, bed or smithing table | Take half, or put down one |
 | 9 | Break block (hold in survival) | |
 | 1 / 3 | Previous / next hotbar slot | Pick the hotbar slot (block list) |
 | . | Inventory (creative: block list) | Close |

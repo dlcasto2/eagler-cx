@@ -13,7 +13,7 @@
 
 // ---- chests: 27 stacks each, kept in block_storage by position
 void chestPlaced(int x, int y, int z);
-// Its non-empty stacks; the record is removed.
+// Its non-empty stacks; the record is removed. Furnaces use this too.
 std::vector<ItemStack> chestBroken(int x, int y, int z);
 
 // ---- smithing table: a diamond tool and a netherite ingot make the

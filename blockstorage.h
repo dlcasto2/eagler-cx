@@ -33,6 +33,13 @@ public:
     size_t size() const { return records.size(); }
     void clear() { records.clear(); }
 
+    // f(const BlockPos &, StorageRecord &) for every record, in position order.
+    template <typename F> void forEach(F f)
+    {
+        for(auto &kv : records)
+            f(kv.first, kv.second);
+    }
+
     bool save(SaveWriter &w) const;
     bool load(SaveReader &r);
 
