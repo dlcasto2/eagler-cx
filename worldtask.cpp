@@ -464,7 +464,10 @@ bool WorldTask::useBlock(int bx, int by, int bz)
 {
     const BLOCK_WDATA target = world.getBlock(bx, by, bz);
     const BLOCK b = getBLOCK(target);
-    if(b != BLOCK_CHEST && b != BLOCK_SMITHING_TABLE && b != BLOCK_BED)
+    if(b != BLOCK_CHEST && b != BLOCK_SMITHING_TABLE && b != BLOCK_BED && b != BLOCK_CRAFTING_TABLE)
+        return false;
+    // Creative has the block list instead, so a table there is just a block.
+    if(b == BLOCK_CRAFTING_TABLE && player_state.mode != GameMode::SURVIVAL)
         return false;
 
     if(b == BLOCK_BED)
@@ -491,6 +494,8 @@ bool WorldTask::useBlock(int bx, int by, int bz)
     draw_inventory = true;
     if(b == BLOCK_CHEST)
         chest_screen.open(bx, by, bz);
+    else if(b == BLOCK_CRAFTING_TABLE)
+        inventory_screen.openCrafting();
     else
         smithing_screen.makeCurrent();
     return true;
