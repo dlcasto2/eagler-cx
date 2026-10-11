@@ -2,6 +2,7 @@
 
 #include "blockrenderer.h"
 #include "item_icons.h"
+#include "itempile.h"
 #include "particle.h"
 #include "terrain.h"
 #include "texturetools.h"
@@ -26,7 +27,23 @@ const TEXTURE &iconAtlas3D()
     return *copy;
 }
 
-constexpr int DROP_SIZE = BLOCK_SIZE * 3 / 10;
+constexpr int DROP_SIZE = BLOCK_SIZE * 3 / 10, PILE_SIZE = BLOCK_SIZE / 2;
+
+void renderStack(const VECTOR3 &center, int size, const ItemStack &s)
+{
+    if(isBlockItem(s.id))
+    {
+        glBindTexture(terrain_current);
+        Particle::render(center, size, global_block_renderer.materialTexture(s.toBlock()).current);
+        return;
+    }
+    int u, v;
+    if(itemIconUV(s.id, u, v))
+    {
+        glBindTexture(&iconAtlas3D());
+        Particle::render(center, size, textureArea(u, v, 16, 16));
+    }
+}
 
 } // namespace
 
@@ -39,18 +56,19 @@ void renderEntities(const EntityPool &pool)
 
         if(e.type == EntityType::DROPPED_ITEM)
         {
-            if(isBlockItem(e.item.id))
-            {
-                glBindTexture(terrain_current);
-                Particle::render(center, DROP_SIZE, global_block_renderer.materialTexture(e.item.toBlock()).current);
-                return;
-            }
-            int u, v;
-            if(itemIconUV(e.item.id, u, v))
-            {
-                glBindTexture(&iconAtlas3D());
-                Particle::render(center, DROP_SIZE, textureArea(u, v, 16, 16));
-            }
+            renderStack(center, DROP_SIZE, e.item);
+            return;
+        }
+        if(e.type == EntityType::ITEM_PILE)
+        {
+            // A pile shows its first stack, a bit bigger than a single drop.
+            if(ItemPile *p = item_piles.get(e.pile_index))
+                for(const ItemStack &s : p->stacks)
+                    if(!s.empty())
+                    {
+                        renderStack(center, PILE_SIZE, s);
+                        break;
+                    }
             return;
         }
 

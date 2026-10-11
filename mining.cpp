@@ -66,7 +66,21 @@ ItemStack blockDropFor(BLOCK_WDATA target, ItemId tool, uint32_t &rng)
 {
     const BLOCK b = getBLOCK(target);
     const BlockDef &d = blockDef(b);
-    if(!d.defined || !canHarvest(target, tool) || d.drop.item == 0)
+    if(!d.defined || !canHarvest(target, tool))
+        return ItemStack();
+
+    // Oak leaves (1.8.8): a sapling 1 time in 20, otherwise an apple 1 time in 200.
+    if(b == BLOCK_LEAVES)
+    {
+        const uint32_t roll = nextRandom(rng) % 1000;
+        if(roll < 50)
+            return ItemStack(BLOCK_SAPLING, 1);
+        if(roll < 55)
+            return ItemStack(ITEM_APPLE, 1);
+        return ItemStack();
+    }
+
+    if(d.drop.item == 0)
         return ItemStack();
     if(d.drop.chance_permille < 1000 && nextRandom(rng) % 1000 >= d.drop.chance_permille)
         return ItemStack();

@@ -1,12 +1,10 @@
 #include "block_art.h"
 
-#include "texturetools.h"
 
 namespace {
 
-// Atlas cells in row 4, which the stock atlas doesn't use.
-constexpr int EMERALD_ORE_CELL = 0, DEBRIS_SIDE_CELL = 1, DEBRIS_TOP_CELL = 2, ART_ROW = 4;
-constexpr int STONE_CELL_X = 1, STONE_CELL_Y = 0;
+// Atlas cells in row 4 whose stock textures (spawner, snow) Crafti doesn't use.
+constexpr int DEBRIS_SIDE_CELL = 1, DEBRIS_TOP_CELL = 2, ART_ROW = 4;
 
 // Nearest-neighbour scale of a 16x16 piece of art into one atlas cell,
 // skipping its transparent pixels.
@@ -26,10 +24,14 @@ void paint(const TEXTURE &art, TEXTURE &terrain, int cell_x, int cell_y, int fw,
 
 void paintAddedBlockTextures(TEXTURE &terrain, int fw, int fh)
 {
-    // Emerald ore: Crafti's stone with gems on top, so it matches the other ores.
-    drawTexture(terrain, terrain, STONE_CELL_X * fw, STONE_CELL_Y * fh, fw, fh, EMERALD_ORE_CELL * fw, ART_ROW * fh, fw, fh);
-    paint(art_emerald_overlay, terrain, EMERALD_ORE_CELL, ART_ROW, fw, fh);
-
     paint(art_debris_side, terrain, DEBRIS_SIDE_CELL, ART_ROW, fw, fh);
     paint(art_debris_top, terrain, DEBRIS_TOP_CELL, ART_ROW, fw, fh);
+
+    // The stock atlas has blank placeholders where these would go.
+    paint(art_chest_top, terrain, 10, 1, fw, fh);
+    paint(art_chest_side, terrain, 11, 1, fw, fh);
+    paint(art_chest_front, terrain, 9, 2, fw, fh);
+    paint(art_smithing_top, terrain, 10, 2, fw, fh);
+    paint(art_smithing_side, terrain, 9, 3, fw, fh);
+    paint(art_smithing_front, terrain, 10, 3, fw, fh);
 }

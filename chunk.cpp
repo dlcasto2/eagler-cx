@@ -681,6 +681,13 @@ bool Chunk::isBlockPowered(const int x, const int y, const int z, bool ignore_re
         || gettingPowerFrom(x, y, z+1, BLOCK_FRONT, ignore_redstone_wire);
 }
 
+void Chunk::growTree(int local_x, int local_y, int local_z)
+{
+    // makeTree picks a random height and sometimes declines; the sapling then
+    // simply waits for another try.
+    makeTree(local_x, local_y, local_z);
+}
+
 void Chunk::makeTree(unsigned int x, unsigned int y, unsigned int z)
 {
     int max_height = World::HEIGHT * Chunk::SIZE - (y + this->y * Chunk::SIZE);

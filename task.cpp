@@ -8,6 +8,10 @@
 #include "inventory.h"
 #include "playerinventory.h"
 #include "gamestate.h"
+#include "blockstorage.h"
+#include "itempile.h"
+#include "drops.h"
+#include "entity.h"
 
 //The values have to stay somewhere
 Task *Task::current_task;
@@ -131,6 +135,9 @@ LoadResult Task::load()
         int hotbar_slot;
         LOAD_OR_FAIL(hotbar_slot)
         convertV6Inventory(hotbar, hotbar_slot, player_inventory, player_state);
+        // v6 worlds have no chests or piles of their own
+        block_storage.clear();
+        item_piles.clear();
     }
     else // version 7
     {
@@ -155,6 +162,10 @@ LoadResult Task::load()
     gzclose(file);
 
     world.setPosition(world_task.x, world_task.y, world_task.z);
+
+    // Entities aren't saved: start fresh, then bring back the saved item piles.
+    entity_pool = EntityPool();
+    respawnPiles(entity_pool, item_piles);
 
     #undef LOAD_OR_FAIL
 

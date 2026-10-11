@@ -85,6 +85,9 @@ public:
 
     const int x, y, z;
 
+    // Turns the sapling at this spot into a tree, if there's room. Saplings call this.
+    void growTree(int local_x, int local_y, int local_z);
+
 private:
     int brightness = BRIGHTNESS_LEVELS - 1;
     //Terrain generation
