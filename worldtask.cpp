@@ -8,6 +8,8 @@
 #include "platform_time.h"
 #include "lighting.h"
 #include "gamestate.h"
+#include "furnace.h"
+#include "furnacescreen.h"
 #include "daylight.h"
 #include "mining.h"
 #include "saplingrenderer.h"
@@ -282,6 +284,8 @@ void WorldTask::logic()
             {
                 if(getBLOCK(block_to_place) == BLOCK_CHEST)
                     chestPlaced(static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(pos.z));
+                else if(getBLOCK(block_to_place) == BLOCK_FURNACE)
+                    furnacePlaced(static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(pos.z));
                 useOne();
             }
         }
@@ -399,6 +403,7 @@ void WorldTask::tick()
     collectDrops(entity_pool, box, player_inventory);
     collectPiles(entity_pool, item_piles, box, player_inventory);
     removeExpiredPiles(entity_pool, item_piles);
+    tickFurnaces();
 
     // Sleeping: the screen fades, then it's morning.
     if(sleep_ticks > 0 && --sleep_ticks == 0)
@@ -464,7 +469,7 @@ bool WorldTask::useBlock(int bx, int by, int bz)
 {
     const BLOCK_WDATA target = world.getBlock(bx, by, bz);
     const BLOCK b = getBLOCK(target);
-    if(b != BLOCK_CHEST && b != BLOCK_SMITHING_TABLE && b != BLOCK_BED && b != BLOCK_CRAFTING_TABLE)
+    if(b != BLOCK_CHEST && b != BLOCK_SMITHING_TABLE && b != BLOCK_BED && b != BLOCK_CRAFTING_TABLE && b != BLOCK_FURNACE)
         return false;
     // Creative has the block list instead, so a table there is just a block.
     if(b == BLOCK_CRAFTING_TABLE && player_state.mode != GameMode::SURVIVAL)
@@ -496,6 +501,8 @@ bool WorldTask::useBlock(int bx, int by, int bz)
         chest_screen.open(bx, by, bz);
     else if(b == BLOCK_CRAFTING_TABLE)
         inventory_screen.openCrafting();
+    else if(b == BLOCK_FURNACE)
+        furnace_screen.open(bx, by, bz);
     else
         smithing_screen.makeCurrent();
     return true;
@@ -530,7 +537,7 @@ void WorldTask::removeBlock(int bx, int by, int bz, BLOCK_WDATA target)
     world.changeBlock(bx, by, bz, BLOCK_AIR);
 
     const GLFix cx = bx * BLOCK_SIZE + BLOCK_SIZE / 2, cy = by * BLOCK_SIZE + BLOCK_SIZE / 2, cz = bz * BLOCK_SIZE + BLOCK_SIZE / 2;
-    if(getBLOCK(target) == BLOCK_CHEST)
+    if(getBLOCK(target) == BLOCK_CHEST || getBLOCK(target) == BLOCK_FURNACE)
     {
         // Everything inside comes out as one pile.
         const std::vector<ItemStack> contents = chestBroken(bx, by, bz);
@@ -545,6 +552,29 @@ void WorldTask::removeBlock(int bx, int by, int bz, BLOCK_WDATA target)
         if(getBLOCK(world.getBlock(ox, by, oz)) == BLOCK_BED)
             world.changeBlock(ox, by, oz, BLOCK_AIR);
     }
+}
+
+void WorldTask::tickFurnaces()
+{
+    static std::vector<BlockPos> gone;
+    gone.clear();
+    block_storage.forEach([this](const BlockPos &p, StorageRecord &r) {
+        if(r.kind != StorageKind::FURNACE)
+            return;
+        // Idle furnaces cost nothing; the rest only run while their chunk is loaded.
+        if(r.burn_ticks_left == 0 && r.cook_ticks == 0 && (r.slots[FURNACE_INPUT].empty() || r.slots[FURNACE_FUEL].empty()))
+            return;
+        if(!world.isLoaded(p.x, p.y, p.z))
+            return;
+        if(getBLOCK(world.getBlock(p.x, p.y, p.z)) != BLOCK_FURNACE)
+        {
+            gone.push_back(p);   // blown up or replaced
+            return;
+        }
+        furnaceTick(r);
+    });
+    for(const BlockPos &p : gone)
+        block_storage.erase(p);
 }
 
 void WorldTask::tickMining(bool on_ground)

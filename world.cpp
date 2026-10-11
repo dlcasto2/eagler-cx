@@ -279,6 +279,11 @@ void World::render()
         c->render();
 }
 
+bool World::isLoaded(int x, int y, int z) const
+{
+    return findChunk(getChunk(x), getChunk(y), getChunk(z)) != nullptr;
+}
+
 Chunk* World::findChunk(int x, int y, int z) const
 {
     auto&& c = all_chunks.find(std::tuple<int,int,int>{x, y, z});

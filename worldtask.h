@@ -24,13 +24,16 @@ public:
 
     void setMessage(const char *message);
 
+    // Runs every furnace in a loaded chunk for one tick (also while the furnace screen is open).
+    void tickFurnaces();
+
     unsigned int frameCount() { return frame_counter; }
 
 private:
     void crosshairPixel(int x, int y);
     void renderSky();
     void tickMining(bool on_ground);
-    bool useBlock(int bx, int by, int bz);          // 7 on a chest, smithing table or bed
+    bool useBlock(int bx, int by, int bz);          // 7 on a chest, furnace, crafting table, smithing table or bed
     bool placeBed(int fx, int fy, int fz);
     void removeBlock(int bx, int by, int bz, BLOCK_WDATA target);   // with chest contents and bed halves
 
