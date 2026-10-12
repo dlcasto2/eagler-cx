@@ -56,22 +56,6 @@ void drawFlame(TEXTURE &dst, int x, int y, int lit)
         }
 }
 
-// A 22x15 right arrow, filled white from the left over `filled` columns.
-void drawArrow(TEXTURE &dst, int x, int y, int filled)
-{
-    for(int r = 0; r < 15; ++r)
-    {
-        const int d = r < 7 ? r : 14 - r;   // the head widens to the middle row
-        for(int c = 0; c < 22; ++c)
-        {
-            const bool shaft = c < 14 && r >= 5 && r <= 9;
-            const bool head = c >= 14 && c <= 14 + d;
-            if(shaft || head)
-                fillRect(dst, x + c, y + r, 1, 1, c < filled ? 0xFFFF : grey565(0x8B));
-        }
-    }
-}
-
 } // namespace
 
 StorageRecord *FurnaceScreen::record()
@@ -141,7 +125,7 @@ void FurnaceScreen::render()
     const int lit = r->burn_ticks_left == 0 || r->burn_ticks_total == 0 ? 0
                   : (r->burn_ticks_left * 13 + r->burn_ticks_total - 1) / r->burn_ticks_total + 1;
     drawFlame(*screen, px + FLAME_X, py + FLAME_Y, lit > 14 ? 14 : lit);
-    drawArrow(*screen, px + ARROW_X, py + ARROW_Y, r->cook_ticks * 23 / FURNACE_COOK_TICKS);
+    drawProgressArrow(*screen, px + ARROW_X, py + ARROW_Y, r->cook_ticks * 23 / FURNACE_COOK_TICKS);
 
     const int gx = px + 7;
     drawPlayerSlots(*screen, gx, py + 83);

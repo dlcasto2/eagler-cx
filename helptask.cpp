@@ -19,7 +19,7 @@ const char *const controls[][2] = {
     { "+ / -", "View distance" },
     { "Ctrl + .", "Screenshot" },
     { "In screens", "5 take/put, 7 half/one, enter send" },
-    { "Recipes", "tab, then 5 craft, enter craft all" },
+    { "Recipes", "tab: 5 craft, 7 into grid, enter all" },
 };
 
 } // namespace
