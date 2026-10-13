@@ -363,3 +363,19 @@ void drawHudIcon(TEXTURE &dst, int icon, int x, int y)
 {
     blitKeyed(gui_hud, icon * 9, 0, 9, 9, dst, x, y);
 }
+
+void drawProgressArrow(TEXTURE &dst, int x, int y, int filled)
+{
+    constexpr COLOR empty = (0x8B >> 3) << 11 | (0x8B >> 2) << 5 | (0x8B >> 3);
+    for(int r = 0; r < 15; ++r)
+    {
+        const int d = r < 7 ? r : 14 - r;   // the head widens to the middle row
+        for(int c = 0; c < 22; ++c)
+        {
+            const bool shaft = c < 14 && r >= 5 && r <= 9;
+            const bool head = c >= 14 && c <= 14 + d;
+            if(shaft || head)
+                fillRect(dst, x + c, y + r, 1, 1, c < filled ? 0xFFFF : empty);
+        }
+    }
+}

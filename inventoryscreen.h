@@ -5,12 +5,13 @@
 #include "items.h"
 #include "recipelist.h"
 
-// The survival inventory: all 36 slots, a cursor, the stack in hand and a
-// recipe list on the left. The inventory offers the simple recipes; a
-// crafting table opens the same screen with all of them.
-// Slots: 8 4 6 2 move, 5 take/put, 7 half/one, Enter sends across.
-// Recipes: 8 2 pick, 5 crafts one (hold to repeat), Enter crafts all.
-// Tab (or 4 / 6 at the edge) switches between them; Esc or . closes.
+// The survival inventory with a 2x2 crafting grid, or a crafting table's
+// 3x3 grid, beside a recipe list.
+// Slots and grid: 8 4 6 2 move, 5 take/put, 7 half/one, Enter sends across.
+// The result slot: 5 or 7 takes one craft, Enter crafts all into the inventory.
+// Recipe list: 8 2 pick, 5 crafts one (hold to repeat), 7 lays it in the
+// grid, Enter crafts all. The empty grid shows the picked recipe's shape.
+// Tab (or 4 at the left edge, 6 from the list) switches; Esc or . closes.
 class InventoryScreen : public Task
 {
 public:
@@ -18,25 +19,34 @@ public:
     virtual void render() override;
     virtual void logic() override;
 
-    // Opens the crafting table's full recipe list.
+    // Opens the crafting table: 3x3 grid and every recipe.
     void openCrafting();
 
-    // Puts anything held back into the inventory and returns to the world.
+    // Puts the grid and anything held back into the inventory and returns to the world.
     void close();
 
-    static constexpr int PANEL_W = 176, PANEL_H = 103, TABLE_PANEL_H = 166, LIST_W = 132;
+    static constexpr int PANEL_W = 176, PANEL_H = 166, LIST_W = 132;
 
-    int cursor_row = 3, cursor_col = 0;   // rows 0-2 storage, row 3 hotbar
+    // Rows 0..g-1 are the grid (column g is the result), then three storage
+    // rows and the hotbar.
+    int cursor_row = 0, cursor_col = 0;
     ItemStack held;
+    ItemStack grid[9];
     bool at_table = false, focus_list = false;
     RecipeList recipes;
 
-    // The slot index under the cursor (0-8 hotbar, 9-35 storage).
+    int gridSize() const { return at_table ? 3 : 2; }
+    // The inventory slot under the cursor (0-8 hotbar, 9-35 storage), or -1 in the grid.
     int cursorSlot() const;
 
 private:
     void open(bool table);
     void craftSelected(bool all);
+    void takeResult(bool all);
+    void fillFromList();
+    void emptyGrid();
+    void showMessage(const char *m);
+    void moveCursorVertical(bool up);
 
     int hold_frames = 0;
     int message_frames = 0;

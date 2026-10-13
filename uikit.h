@@ -29,6 +29,8 @@ void drawSlot(TEXTURE &dst, int x, int y);
 void drawSlotHighlight(TEXTURE &dst, int x, int y);
 // A wide grey menu button with a centered label.
 void drawButton(TEXTURE &dst, int x, int y, int w, int h, const char *label, bool selected, bool enabled = true);
+// A 22x15 right arrow, white over the first `filled` columns (0-22), grey after.
+void drawProgressArrow(TEXTURE &dst, int x, int y, int filled);
 // A dark tooltip box with one line of text, kept on screen.
 void drawTooltip(TEXTURE &dst, const char *text, int x, int y);
 
