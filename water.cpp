@@ -1,13 +1,13 @@
 #include "water.h"
 
-void fillSeaColumn(BLOCK_WDATA blocks[8][8][8], int x, int z, int chunk_y, int ground_height)
+void fillSeaColumn(BLOCK_WDATA blocks[8][8][8], int x, int z, int chunk_y, int ground_height, bool frozen)
 {
     const int base = chunk_y * 8;
     const int from = ground_height > base ? ground_height - base : 0;
     const int to = SEA_LEVEL - base < 8 ? SEA_LEVEL - base : 8;
     for(int y = from; y < to; ++y)
         if(getBLOCK(blocks[x][y][z]) == BLOCK_AIR)
-            blocks[x][y][z] = WATER_SOURCE;
+            blocks[x][y][z] = frozen && base + y == SEA_LEVEL - 1 ? BLOCK_ICE : WATER_SOURCE;
 }
 
 bool becomesWaterSource(BLOCK_WDATA self, const BLOCK_WDATA sides[4], BLOCK_WDATA below, bool below_is_solid)

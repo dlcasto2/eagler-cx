@@ -83,6 +83,7 @@ bool buildTable()
     // 1.8.8: empty buckets stack to 16, full ones don't stack.
     table[ITEM_BUCKET - FIRST_ITEM] = ItemDef{ "Bucket", 16, ToolKind::NONE, 0, 1, 0, 1, 0, 0 };
     table[ITEM_WATER_BUCKET - FIRST_ITEM] = ItemDef{ "Water Bucket", 1, ToolKind::NONE, 0, 1, 0, 1, 0, 0 };
+    table[ITEM_SNOWBALL - FIRST_ITEM] = ItemDef{ "Snowball", 16, ToolKind::NONE, 0, 1, 0, 1, 0, 0 };
     return true;
 }
 

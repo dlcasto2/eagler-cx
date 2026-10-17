@@ -10,7 +10,9 @@ ItemStack smeltResult(const ItemStack &in)
     case BLOCK_GOLD_ORE: return ItemStack(ITEM_GOLD_INGOT, 1);
     case BLOCK_SAND: return ItemStack(BLOCK_GLASS, 1);
     case BLOCK_COBBLESTONE: return ItemStack(BLOCK_STONE, 1);
-    case BLOCK_WOOD: return ItemStack(ITEM_CHARCOAL, 1);
+    case BLOCK_WOOD:
+    case BLOCK_SPRUCE_LOG:
+    case BLOCK_BIRCH_LOG: return ItemStack(ITEM_CHARCOAL, 1);
     case BLOCK_ANCIENT_DEBRIS: return ItemStack(ITEM_NETHERITE_SCRAP, 1);
     case ITEM_PORK_RAW: return ItemStack(ITEM_PORK_COOKED, 1);
     case ITEM_BEEF_RAW: return ItemStack(ITEM_BEEF_COOKED, 1);
@@ -30,6 +32,8 @@ uint16_t fuelTicks(const ItemStack &s)
     case ITEM_CHARCOAL:
         return 1600;
     case BLOCK_WOOD:
+    case BLOCK_SPRUCE_LOG:
+    case BLOCK_BIRCH_LOG:
     case BLOCK_PLANKS_NORMAL:
     case BLOCK_PLANKS_DARK:
     case BLOCK_PLANKS_BRIGHT:

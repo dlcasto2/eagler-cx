@@ -12,6 +12,7 @@
 #include "terrain.h"
 #include "aabb.h"
 #include "particle.h"
+#include "trees.h"
 
 class World;
 
@@ -85,13 +86,14 @@ public:
 
     const int x, y, z;
 
-    // Turns the sapling at this spot into a tree, if there's room. Saplings call this.
+    // Turns the sapling at this spot into its tree, if there's room. Saplings call this.
     void growTree(int local_x, int local_y, int local_z);
 
 private:
     int brightness = BRIGHTNESS_LEVELS - 1;
     //Terrain generation
-    void makeTree(unsigned int x, unsigned int y, unsigned int z);
+    // A tree of that kind with its trunk starting at the local position. False if it wouldn't fit.
+    bool placeTree(TreeKind kind, int x, int y, int z, uint32_t rnd);
 
     //Data
     unsigned int getPosition(unsigned int x, unsigned int y, unsigned int z);

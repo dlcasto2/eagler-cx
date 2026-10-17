@@ -5,6 +5,7 @@
 #include "colorrenderer.h"
 #include "doorrenderer.h"
 #include "fluidrenderer.h"
+#include "trees.h"
 #include "glassrenderer.h"
 #include "lamprenderer.h"
 #include "leavesrenderer.h"
@@ -369,7 +370,9 @@ UniversalBlockRenderer::UniversalBlockRenderer()
     map[BLOCK_FURNACE] = oriented_renderer;
     map[BLOCK_GLASS] = std::make_shared<GlassRenderer>();
     map[BLOCK_GRASS] = color_renderer;
-    map[BLOCK_LEAVES] = std::make_shared<LeavesRenderer>();
+    map[BLOCK_LEAVES] = std::make_shared<LeavesRenderer>(BLOCK_LEAVES, OAK_LEAVES_FANCY_X, OAK_LEAVES_Y);
+    map[BLOCK_SPRUCE_LEAVES] = std::make_shared<LeavesRenderer>(BLOCK_SPRUCE_LEAVES, SPRUCE_LEAVES_FANCY_X, SPRUCE_LEAVES_Y);
+    map[BLOCK_BIRCH_LEAVES] = std::make_shared<LeavesRenderer>(BLOCK_BIRCH_LEAVES, BIRCH_LEAVES_FANCY_X, BIRCH_LEAVES_Y);
     map[BLOCK_TNT] = std::make_shared<TNTRenderer>();
     map[BLOCK_PLANKS_NORMAL] = color_renderer;
     map[BLOCK_PUMPKIN] = oriented_renderer;
@@ -390,6 +393,7 @@ UniversalBlockRenderer::UniversalBlockRenderer()
     auto flower_renderer = std::make_shared<BillboardRenderer>();
     flower_renderer->setEntry(0, 12, 0, "Red flower", BLOCK_SIZE, BLOCK_SIZE/2, BLOCK_SIZE);
     flower_renderer->setEntry(1, 13, 0, "Yellow flower", BLOCK_SIZE, BLOCK_SIZE/2, BLOCK_SIZE);
+    flower_renderer->setEntry(FLOWER_DEAD_BUSH, 7, 3, "Dead Bush", BLOCK_SIZE, BLOCK_SIZE * 3 / 4, BLOCK_SIZE);
     map[BLOCK_FLOWER] = flower_renderer;
 
     auto mushroom_renderer = std::make_shared<BillboardRenderer>();

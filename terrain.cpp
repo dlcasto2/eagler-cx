@@ -1,5 +1,6 @@
 #include "terrain.h"
 
+#include <initializer_list>
 #include <libndls.h>
 
 #include "textures/terrain.h"
@@ -44,7 +45,16 @@ const char *block_names[BLOCK_NORMAL_LAST + 1] =
     "Ancient Debris",
     "Smithing Table",
     "Chest",
-    "Obsidian"
+    "Obsidian",
+    "Sandstone",
+    "Snowy Grass",
+    "Snow",
+    "Ice",
+    "Cactus",
+    "Spruce Wood",
+    "Birch Wood",
+    "Spruce Leaves",
+    "Birch Leaves"
 };
 
 struct BLOCK_TEXTURE {
@@ -72,16 +82,16 @@ static const BLOCK_TEXTURE texture_atlas[][16] =
     { NON, ALL(BLOCK_BEDROCK), ALL(BLOCK_SAND), ALL(BLOCK_COBBLESTONE), SID(BLOCK_WOOD), TAB(BLOCK_WOOD), ALL(BLOCK_IRON), ALL(BLOCK_GOLD), ALL(BLOCK_DIAMOND), ALL(BLOCK_EMERALD_BLOCK), TAB(BLOCK_CHEST), SWF(BLOCK_CHEST), NON, NON, NON, NON },
     { ALL(BLOCK_GOLD_ORE), ALL(BLOCK_IRON_ORE), ALL(BLOCK_COAL_ORE), FRO(BLOCK_BOOKSHELF), NON, ALL(BLOCK_OBSIDIAN), NON, NON, NON, FRO(BLOCK_CHEST), TAB(BLOCK_SMITHING_TABLE), TAB(BLOCK_CRAFTING_TABLE), FRO(BLOCK_FURNACE), SWF(BLOCK_FURNACE), NON, NON },
     { ALL(BLOCK_SPONGE), ALL(BLOCK_GLASS), ALL(BLOCK_DIAMOND_ORE), ALL(BLOCK_REDSTONE_ORE), NON, ALL(BLOCK_LEAVES), NON, NON, NON, SID(BLOCK_SMITHING_TABLE), FRO(BLOCK_SMITHING_TABLE), SID(BLOCK_CRAFTING_TABLE), FRO(BLOCK_CRAFTING_TABLE), NON, TOP(BLOCK_FURNACE), NON },
-    { ALL(BLOCK_WOOL), SID(BLOCK_ANCIENT_DEBRIS), TAB(BLOCK_ANCIENT_DEBRIS), NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON }, // debris painted by block_art_paint.cpp
+    { ALL(BLOCK_WOOL), NON, ALL(BLOCK_SNOW), ALL(BLOCK_ICE), SID(BLOCK_SNOWY_GRASS), TOP(BLOCK_CACTUS), SID(BLOCK_CACTUS), BOT(BLOCK_CACTUS), NON, NON, NON, ALL(BLOCK_BIRCH_LEAVES), NON, SID(BLOCK_ANCIENT_DEBRIS), TAB(BLOCK_ANCIENT_DEBRIS), NON }, // birch leaves and debris painted in terrainInit and block_art_paint.cpp
     { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
     { NON, NON, NON, NON, NON, NON, TAB(BLOCK_PUMPKIN), ALL(BLOCK_NETHERRACK), NON, ALL(BLOCK_GLOWSTONE), NON, NON, NON, NON, NON, NON},
-    { NON, NON, NON, NON, NON, NON, SWF(BLOCK_PUMPKIN), FRO(BLOCK_PUMPKIN), NON, NON, NON, NON, NON, NON, NON, NON },
-    { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
+    { NON, NON, NON, NON, SID(BLOCK_SPRUCE_LOG), SID(BLOCK_BIRCH_LOG), SWF(BLOCK_PUMPKIN), FRO(BLOCK_PUMPKIN), NON, NON, NON, NON, NON, NON, NON, NON },
+    { NON, NON, NON, NON, NON, ALL(BLOCK_SPRUCE_LEAVES), NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
     { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
     { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, ALL(BLOCK_EMERALD_ORE), NON, NON, NON, NON }, // emerald ore: (11,10) in the bundled pack
-    { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
-    { NON, NON, NON, NON, NON, NON, ALL(BLOCK_PLANKS_DARK), AWF(BLOCK_BOOKSHELF), NON, NON, NON, NON, NON, NON, NON, NON },
-    { NON, NON, NON, NON, NON, NON, ALL(BLOCK_PLANKS_BRIGHT), NON, NON, NON, NON, NON, NON, NON, NON, NON },
+    { TOP(BLOCK_SANDSTONE), NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
+    { SID(BLOCK_SANDSTONE), NON, NON, NON, NON, NON, ALL(BLOCK_PLANKS_DARK), AWF(BLOCK_BOOKSHELF), NON, NON, NON, NON, NON, NON, NON, NON },
+    { BOT(BLOCK_SANDSTONE), NON, NON, NON, NON, NON, ALL(BLOCK_PLANKS_BRIGHT), NON, NON, NON, NON, NON, NON, NON, NON, NON },
     { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON },
     { NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON, NON }
 };
@@ -128,6 +138,14 @@ static void makeColor(const RGB &color, TEXTURE &texture, const int x, const int
         }
 }
 
+// Copies one atlas cell over another, transparent pixels too (drawTexture skips them).
+static void copyCell(TEXTURE &texture, int from_x, int from_y, int to_x, int to_y, const int w, const int h)
+{
+    for(int y = 0; y < h; y++)
+        for(int x = 0; x < w; x++)
+            texture.bitmap[to_x * w + x + (to_y * h + y) * texture.width] = texture.bitmap[from_x * w + x + (from_y * h + y) * texture.width];
+}
+
 static void makeWaterOpaque(TEXTURE &texture, const int x, const int y, const int w, const int h)
 {
     for(int x1 = x; x1 < w + x; x1++)
@@ -155,11 +173,23 @@ void terrainInit(const char *texture_path)
     int field_width = terrain_current->width / fields_x;
     int field_height = terrain_current->height / fields_y;
 
+    // Birch leaves are oak leaves in a paler green: copy the grey originals
+    // (fancy and fast) into the jukebox cells, which Crafti doesn't use.
+    copyCell(*terrain_current, OAK_LEAVES_FANCY_X, OAK_LEAVES_Y, BIRCH_LEAVES_FANCY_X, BIRCH_LEAVES_Y, field_width, field_height);
+    copyCell(*terrain_current, OAK_LEAVES_FANCY_X + 1, OAK_LEAVES_Y, BIRCH_LEAVES_FAST_X, BIRCH_LEAVES_Y, field_width, field_height);
+
     //Give grass and leaves color
     const RGB green = { 0.5f, 0.8f, 0.3f };
     makeColor(green, *terrain_current, 0, 0, field_width, field_height);
     makeColor(green, *terrain_current, 5 * field_width, 3 * field_height, field_width, field_height);
     makeColor(green, *terrain_current, 4 * field_width, 3 * field_height, field_width, field_height);
+
+    // 1.8.8's birch and spruce foliage colours, brightened like the oak's above
+    const RGB birch = { 0.58f, 0.75f, 0.38f }, spruce = { 0.38f, 0.58f, 0.40f };
+    makeColor(birch, *terrain_current, BIRCH_LEAVES_FANCY_X * field_width, BIRCH_LEAVES_Y * field_height, field_width, field_height);
+    makeColor(birch, *terrain_current, BIRCH_LEAVES_FAST_X * field_width, BIRCH_LEAVES_Y * field_height, field_width, field_height);
+    makeColor(spruce, *terrain_current, 4 * field_width, 8 * field_height, field_width, field_height);
+    makeColor(spruce, *terrain_current, 5 * field_width, 8 * field_height, field_width, field_height);
 
     //Also redstone
     drawTexture(*terrain_current, *terrain_current, 4 * field_width, 10 * field_height, field_width, field_height, 4 * field_width, 11 * field_height, field_width, field_height);
@@ -214,6 +244,14 @@ void terrainInit(const char *texture_path)
 
     //Slight hack, you can't assign a texture to multiple blocks
     block_textures[BLOCK_GRASS][BLOCK_BOTTOM] = block_textures[BLOCK_DIRT][BLOCK_BOTTOM];
+    block_textures[BLOCK_SNOWY_GRASS][BLOCK_TOP] = block_textures[BLOCK_SNOW][BLOCK_TOP];
+    block_textures[BLOCK_SNOWY_GRASS][BLOCK_BOTTOM] = block_textures[BLOCK_DIRT][BLOCK_BOTTOM];
+    // Every log shares the oak's rings on its ends.
+    for(BLOCK log : { BLOCK_SPRUCE_LOG, BLOCK_BIRCH_LOG })
+    {
+        block_textures[log][BLOCK_TOP] = block_textures[BLOCK_WOOD][BLOCK_TOP];
+        block_textures[log][BLOCK_BOTTOM] = block_textures[BLOCK_WOOD][BLOCK_BOTTOM];
+    }
 
     // Assign special_block_textures based on special_block_texture_idx
     for(unsigned int i = 0; i < sizeof(special_block_texture_idx)/sizeof(*special_block_texture_idx); i++)

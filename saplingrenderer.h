@@ -3,8 +3,8 @@
 
 #include "billboardrenderer.h"
 
-// An oak sapling: a billboard that, on dirt or grass, now and then grows into
-// a tree using the same shape as world generation.
+// A sapling (oak, spruce or birch by its data): a billboard that, on dirt or
+// grass, now and then grows into its tree using the world generator's shape.
 class SaplingRenderer : public BillboardRenderer
 {
 public:

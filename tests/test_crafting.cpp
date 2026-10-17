@@ -148,13 +148,13 @@ TEST_CASE("the inventory lists only simple recipes, craftable first") {
     int list[MAX_RECIPES];
     CHECK(recipeCount() <= MAX_RECIPES);
     PlayerInventory inv;
-    CHECK(listRecipes(inv, false, list, MAX_RECIPES) == 11);   // everything that fits 2x2
+    CHECK(listRecipes(inv, false, list, MAX_RECIPES) == 15);   // everything that fits 2x2
     CHECK(listRecipes(inv, true, list, MAX_RECIPES) == recipeCount());
 
     inv.add(ItemStack(ITEM_COAL, 1));
     inv.add(ItemStack(ITEM_STICK, 1));
     const int n = listRecipes(inv, false, list, MAX_RECIPES);
-    CHECK(n == 11);
+    CHECK(n == 15);
     CHECK(recipeAt(list[0]).result == BLOCK_TORCH);
     CHECK(recipeAt(list[1]).result == BLOCK_PLANKS_NORMAL);
 
