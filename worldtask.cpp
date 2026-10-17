@@ -23,6 +23,7 @@
 #include "particle.h"
 #include "texturetools.h"
 #include "water.h"
+#include "biome.h"
 
 #include "aabb.h"
 #include "blockrenderer.h"
@@ -231,6 +232,17 @@ void WorldTask::logic()
         // Saplings only take root on dirt or grass
         if(getBLOCK(block_to_place) == BLOCK_SAPLING && !SaplingRenderer::canStayOn(getBLOCK(world.getBlock(pos.x, pos.y - 1, pos.z))))
             return;
+
+        // Cacti (1.8.8) stand on sand or another cactus, with nothing solid beside them
+        if(getBLOCK(block_to_place) == BLOCK_CACTUS)
+        {
+            const BLOCK below = getBLOCK(world.getBlock(pos.x, pos.y - 1, pos.z));
+            if(below != BLOCK_SAND && below != BLOCK_CACTUS)
+                return;
+            if(global_block_renderer.isObstacle(world.getBlock(pos.x - 1, pos.y, pos.z)) || global_block_renderer.isObstacle(world.getBlock(pos.x + 1, pos.y, pos.z))
+               || global_block_renderer.isObstacle(world.getBlock(pos.x, pos.y, pos.z - 1)) || global_block_renderer.isObstacle(world.getBlock(pos.x, pos.y, pos.z + 1)))
+                return;
+        }
 
         //Only set the block if there's air or a fluid, which it pushes out
         if(current_block == BLOCK_AIR || isFluid(current_block))
@@ -638,6 +650,15 @@ void WorldTask::tickMining(bool on_ground)
     // so a tool that breaks on its last block still gives that block.
     const ItemStack drop = blockDropFor(target, tool, drop_rng);
     removeBlock(bx, by, bz, target);
+
+    // Ice (1.8.8) melts into water, unless there's nothing under it to hold it.
+    if(getBLOCK(target) == BLOCK_ICE)
+    {
+        const BLOCK_WDATA below = world.getBlock(bx, by - 1, bz);
+        if(global_block_renderer.isObstacle(below) || isFluid(below))
+            world.changeBlock(bx, by, bz, WATER_SOURCE);
+    }
+
     spawnDrop(entity_pool, GLFix(bx * BLOCK_SIZE + BLOCK_SIZE / 2), GLFix(by * BLOCK_SIZE + BLOCK_SIZE / 2),
               GLFix(bz * BLOCK_SIZE + BLOCK_SIZE / 2), drop, player_inventory);
     wearTool(held, toolWearFor(tool, target));
@@ -797,7 +818,9 @@ void WorldTask::render()
     #ifdef FPS_COUNTER
         if(message_timeout == 0 && settings_task.getValue(SettingsTask::SHOW_FPS))
         {
-            snprintf(this->message, sizeof(this->message), "FPS: %u", fps);
+            // The biome too, like 1.8.8's debug screen.
+            const Biome biome = biomeAt(world.noiseGenerator(), (x / BLOCK_SIZE).floor(), (z / BLOCK_SIZE).floor());
+            snprintf(this->message, sizeof(this->message), "FPS: %u  %s", fps, biomeName(biome));
             message_timeout = 20;
         }
     #endif

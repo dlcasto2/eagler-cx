@@ -23,8 +23,9 @@ constexpr bool isSandColumn(int ground_height) { return ground_height <= SEA_LEV
 constexpr bool isDryLand(int ground_height) { return ground_height > SEA_LEVEL; }
 
 // Fills one column of a chunk with water sources, from the ground (the
-// column's height in blocks) up to sea level. Only air is replaced.
-void fillSeaColumn(BLOCK_WDATA blocks[8][8][8], int x, int z, int chunk_y, int ground_height);
+// column's height in blocks) up to sea level. Only air is replaced. Frozen,
+// the top block of the water is ice.
+void fillSeaColumn(BLOCK_WDATA blocks[8][8][8], int x, int z, int chunk_y, int ground_height, bool frozen = false);
 
 // ---- Fluids -----------------------------------------------------------------
 

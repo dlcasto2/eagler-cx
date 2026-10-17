@@ -47,12 +47,22 @@ constexpr BLOCK BLOCK_ANCIENT_DEBRIS = 33;
 constexpr BLOCK BLOCK_SMITHING_TABLE = 34; //Data: Direction (BLOCK_SIDE)
 constexpr BLOCK BLOCK_CHEST = 35; //Data: Direction (BLOCK_SIDE); contents in block_storage
 constexpr BLOCK BLOCK_OBSIDIAN = 36; //Water meeting a lava source
-constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_OBSIDIAN;
+// Biome blocks
+constexpr BLOCK BLOCK_SANDSTONE = 37;
+constexpr BLOCK BLOCK_SNOWY_GRASS = 38; //Grass under snow (Ice Plains)
+constexpr BLOCK BLOCK_SNOW = 39;
+constexpr BLOCK BLOCK_ICE = 40;
+constexpr BLOCK BLOCK_CACTUS = 41;
+constexpr BLOCK BLOCK_SPRUCE_LOG = 42;
+constexpr BLOCK BLOCK_BIRCH_LOG = 43;
+constexpr BLOCK BLOCK_SPRUCE_LEAVES = 44;
+constexpr BLOCK BLOCK_BIRCH_LEAVES = 45;
+constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_BIRCH_LEAVES;
 
 //Special blocks begin here
 constexpr int BLOCK_SPECIAL_START = 127;
 constexpr BLOCK BLOCK_TORCH = 127; //Data: Direction (BLOCK_SIDE)
-constexpr BLOCK BLOCK_FLOWER = 128; //Data: Flower type
+constexpr BLOCK BLOCK_FLOWER = 128; //Data: Flower type (0 red, 1 yellow, 2 dead bush)
 constexpr BLOCK BLOCK_SPIDERWEB = 129;
 constexpr BLOCK BLOCK_CAKE = 130;
 constexpr BLOCK BLOCK_MUSHROOM = 131; //Data: Mushroom type
@@ -60,7 +70,7 @@ constexpr BLOCK BLOCK_DOOR = 132; //Data: (top: 1<<3) | BLOCK_SIDE
 constexpr BLOCK BLOCK_WATER = 133; //Data: range
 constexpr BLOCK BLOCK_LAVA = 134; //Data: range
 constexpr BLOCK BLOCK_WHEAT = 135; //Data: growth
-constexpr BLOCK BLOCK_SAPLING = 136; //Grows into a tree
+constexpr BLOCK BLOCK_SAPLING = 136; //Data: tree kind (TreeKind); grows into a tree
 constexpr BLOCK BLOCK_REDSTONE_LAMP = 146; //Data: On/Off
 constexpr BLOCK BLOCK_REDSTONE_SWITCH = 147; //Data: BLOCK_SIDE
 constexpr BLOCK BLOCK_REDSTONE_WIRE = 148; //Data: (active: 1<<6, visited: 1<<5)
@@ -68,6 +78,12 @@ constexpr BLOCK BLOCK_REDSTONE_TORCH = 149; //Data: See BLOCK_TORCH
 constexpr BLOCK BLOCK_PRESSURE_PLATE = 150; //Data: How many ticks kept active
 constexpr BLOCK BLOCK_BED = 151; //Data: facing (BLOCK_SIDE) | 8 on the head half, see containers.h
 constexpr BLOCK BLOCK_SPECIAL_LAST = BLOCK_BED;
+
+// Atlas cells: birch leaves are tinted copies of the oak's, painted over the
+// jukebox; spruce leaves are the stock (4,8) and (5,8).
+constexpr int BIRCH_LEAVES_FANCY_X = 10, BIRCH_LEAVES_FAST_X = 11, BIRCH_LEAVES_Y = 4;
+constexpr int SPRUCE_LEAVES_FANCY_X = 4, SPRUCE_LEAVES_Y = 8;
+constexpr int OAK_LEAVES_FANCY_X = 4, OAK_LEAVES_Y = 3;
 
 constexpr uint8_t RANGE_WATER = 5;
 constexpr uint8_t RANGE_LAVA = 3;

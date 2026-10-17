@@ -5,7 +5,7 @@ A survival-mode fork of [crafti](https://github.com/Vogtinator/crafti) by Fabian
 The goal is 1.8.8-style survival play (items, mining, mobs, and difficulty levels) on a calculator.
 
 > **Status:** survival basics are playable: hold-to-mine with tool tiers, block drops, a day/night cycle,
-> crafting, furnaces, chests, beds, the smithing table, and lakes to swim in and scoop with a bucket.
+> crafting, furnaces, chests, beds, the smithing table, lakes to swim in and scoop with a bucket, and seven biomes.
 > Health and hunger, then mobs, are next.
 > Every screenshot below is from the current build.
 
@@ -24,6 +24,10 @@ Screenshots
 | Furnace: input, fuel and output, with the flame and progress arrow | Help & Controls |
 | ![Lake](docs/screenshots/water.png) | ![Underwater](docs/screenshots/underwater.png) |
 | Lakes with sand beaches; buckets carry water | Underwater: the view turns blue and your air runs down |
+| ![Ice Plains and Taiga](docs/screenshots/biome-snow.png) | ![Extreme Hills](docs/screenshots/biome-hills.png) |
+| Ice Plains meets Taiga: snow, frozen lakes and spruce | Extreme Hills rising out of the Plains |
+| ![Desert](docs/screenshots/biome-desert.png) | ![Birch Forest](docs/screenshots/biome-birch.png) |
+| Desert: sand over sandstone, cacti and dead bushes | Birch Forest |
 | ![Block list](docs/screenshots/block-list.png) | |
 | Creative block list | |
 
@@ -37,7 +41,7 @@ What's new so far
   - hearts, hunger and air bubbles
   - an inventory screen
   - button menus and a pixel font with drop shadows
-- **Items:** 55 items, each with its own icon: tools in six materials, food, ores, materials and buckets.
+- **Items:** 56 items, each with its own icon: tools in six materials, food, ores, materials, buckets and snowballs.
 - **Game mode:** switch between Survival and Creative in Options (locked in Hardcore).
 - **Game clock:** fixed 20 ticks per second, independent of frame rate.
 - **Entities:** up to 32 entities with physics and collision.
@@ -58,6 +62,16 @@ What's new so far
   - **Flowing:** flowing water between two still blocks becomes still (an infinite source). Lava touching water
     turns to obsidian (still lava) or cobblestone (flowing), and lava falling onto water turns it to stone.
   - You aim through water and lava, so you can mine the seabed and build into a lake. Blocks push fluids out.
+- **Biomes:** new chunks belong to one of seven 1.8.8 biomes, each a few hundred blocks across:
+  - **Plains:** open grass with flowers and the odd oak. **Forest:** oak with some birch. **Birch Forest.**
+  - **Taiga:** spruce trees. **Ice Plains:** snow-covered grass, frozen lakes and a few spruce.
+  - **Desert:** sand over sandstone, with cacti and dead bushes and no trees.
+  - **Extreme Hills:** up to 15 blocks higher, with bare rock on the cliffs and snow on the peaks.
+  - New blocks: sandstone, snow, ice, cactus, and spruce and birch wood, leaves and saplings. Spruce and birch wood make
+    the dark and light planks, four sand make sandstone, and a shovel digs four snowballs out of snow, which pack back into
+    a block. Ice melts into water when broken, and cacti only stand on sand with nothing beside them.
+  - Turn on Show FPS in Options to see the biome you're in.
+  - Biomes only shape chunks generated from now on, so the hills can end in a cliff where they meet land you've explored.
 - **Stress test:** `crafti-stress.tns` shows FPS and ticks per second on the calculator.
 
 Planned

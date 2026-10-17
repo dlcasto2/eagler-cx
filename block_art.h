@@ -8,7 +8,7 @@ extern const TEXTURE art_debris_side, art_debris_top;
 extern const TEXTURE art_chest_top, art_chest_side, art_chest_front;
 extern const TEXTURE art_smithing_top, art_smithing_side, art_smithing_front;
 
-// Paints the added blocks into free cells of the terrain atlas: row 4 and the
+// Paints the added blocks into free cells of the terrain atlas: (13,4) (14,4) and the
 // blank "Update TP" placeholders at (10,1) (11,1) (9,2) (10,2) (9,3) (10,3).
 // Call before the resized and darkened copies of the atlas are made.
 void paintAddedBlockTextures(TEXTURE &terrain, int field_width, int field_height);

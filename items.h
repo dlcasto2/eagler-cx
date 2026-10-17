@@ -26,7 +26,8 @@ enum ItemIds : ItemId {
 
     // Buckets
     ITEM_BUCKET = 345, ITEM_WATER_BUCKET,
-    ITEM_LAST = ITEM_WATER_BUCKET
+    ITEM_SNOWBALL = 347,
+    ITEM_LAST = ITEM_SNOWBALL
 };
 
 enum class ToolKind : uint8_t { NONE, PICKAXE, AXE, SHOVEL, SWORD, BOW };

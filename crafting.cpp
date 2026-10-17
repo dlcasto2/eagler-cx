@@ -43,6 +43,8 @@ constexpr Ingredient sticks(uint8_t n) { return one(ITEM_STICK, n); }
 const Recipe recipes[] = {
     // The 2x2 basics
     shapeless(BLOCK_PLANKS_NORMAL, 4, one(BLOCK_WOOD, 1), none(), "a"),
+    shapeless(BLOCK_PLANKS_DARK, 4, one(BLOCK_SPRUCE_LOG, 1), none(), "a"),
+    shapeless(BLOCK_PLANKS_BRIGHT, 4, one(BLOCK_BIRCH_LOG, 1), none(), "a"),
     shaped(ITEM_STICK, 4, planks(2), none(), "a", "a"),
     shaped(BLOCK_CRAFTING_TABLE, 1, planks(4), none(), "aa", "aa"),
     shaped(BLOCK_TORCH, 4, coal(1), sticks(1), "a", "b"),
@@ -64,6 +66,8 @@ const Recipe recipes[] = {
     shaped(BLOCK_TNT, 1, one(ITEM_GUNPOWDER, 5), one(BLOCK_SAND, 4), "aba", "bab", "aba"),
     shaped(ITEM_BREAD, 1, one(ITEM_WHEAT, 3), none(), "aaa"),
     shaped(ITEM_BUCKET, 1, iron(3), none(), "a a", " a "),
+    shaped(BLOCK_SANDSTONE, 1, one(BLOCK_SAND, 4), none(), "aa", "aa"),
+    shaped(BLOCK_SNOW, 1, one(ITEM_SNOWBALL, 4), none(), "aa", "aa"),
 
     // Redstone
     shaped(BLOCK_REDSTONE_TORCH, 1, one(ITEM_REDSTONE_DUST, 1), sticks(1), "a", "b"),
@@ -169,6 +173,8 @@ const char *ingredientName(const Ingredient &in)
     case PLANKS_A: return "Planks";
     case ITEM_COAL: return in.ids[1] == ITEM_CHARCOAL ? "Coal or Charcoal" : "Coal";
     case BLOCK_WOOD: return "Wood";
+    case BLOCK_SPRUCE_LOG: return "Spruce Wood";
+    case BLOCK_BIRCH_LOG: return "Birch Wood";
     case BLOCK_COBBLESTONE: return "Cobblestone";
     case BLOCK_STONE: return "Stone";
     case BLOCK_SAND: return "Sand";
