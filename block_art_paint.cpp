@@ -3,8 +3,8 @@
 
 namespace {
 
-// Atlas cells in row 4 whose stock textures (spawner, snow) Crafti doesn't use.
-constexpr int DEBRIS_SIDE_CELL = 1, DEBRIS_TOP_CELL = 2, ART_ROW = 4;
+// Atlas cells in row 4 whose stock textures (mycelium) Crafti doesn't use.
+constexpr int DEBRIS_SIDE_CELL = 13, DEBRIS_TOP_CELL = 14, ART_ROW = 4;
 
 // Nearest-neighbour scale of a 16x16 piece of art into one atlas cell,
 // skipping its transparent pixels.

@@ -11,6 +11,8 @@ class CollisionQuery
 public:
     virtual ~CollisionQuery() {}
     virtual bool intersects(const AABB &box) const = 0;
+    // Whether any block the box overlaps is water.
+    virtual bool touchesWater(const AABB &/*box*/) const { return false; }
 };
 
 struct MoveResult {
@@ -29,6 +31,12 @@ bool shouldAutoJump(const CollisionQuery &world, const AABB &box, GLFix dx, GLFi
 
 extern const int V13_FPS;
 extern const GLFix GRAVITY_PER_TICK, JUMP_VELOCITY;
+
+// Swimming, from 1.8.8's water movement: each tick vertical speed keeps 80%
+// and loses 0.02 blocks/tick, while holding jump adds 0.04. That settles at
+// 2 blocks/s sinking or rising. Walking speed is roughly halved.
+extern const GLFix SWIM_SINK_PER_TICK, SWIM_UP_PER_TICK;
+
 constexpr uint16_t DESPAWN_TICKS = 6000;   // 5 minutes at 20 ticks per second
 
 #endif // PHYSICS_H

@@ -23,7 +23,11 @@ enum ItemIds : ItemId {
     // Tools occupy 320-343, see toolId()
     ITEM_FIRST_TOOL = 320,
     ITEM_BOW = 344,
-    ITEM_LAST = 344
+
+    // Buckets
+    ITEM_BUCKET = 345, ITEM_WATER_BUCKET,
+    ITEM_SNOWBALL = 347,
+    ITEM_LAST = ITEM_SNOWBALL
 };
 
 enum class ToolKind : uint8_t { NONE, PICKAXE, AXE, SHOVEL, SWORD, BOW };

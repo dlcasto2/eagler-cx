@@ -11,6 +11,10 @@ const int V13_FPS = 15;
 const GLFix GRAVITY_PER_TICK = accelPerTick(5, V13_FPS);
 const GLFix JUMP_VELOCITY = velocityPerTick(50, V13_FPS);
 
+// 0.02 and 0.04 blocks per tick.
+const GLFix SWIM_SINK_PER_TICK = GLFix(BLOCK_SIZE) / 50;
+const GLFix SWIM_UP_PER_TICK = GLFix(BLOCK_SIZE) / 25;
+
 static AABB shifted(const AABB &box, GLFix dx, GLFix dy, GLFix dz)
 {
     return AABB(box.low_x + dx, box.low_y + dy, box.low_z + dz, box.high_x + dx, box.high_y + dy, box.high_z + dz);

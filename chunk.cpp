@@ -1,11 +1,15 @@
 #include <cassert>
 #include <cstdlib>
 #include <algorithm>
+#include <initializer_list>
 #include <libndls.h>
 
 #include "world.h"
 #include "chunk.h"
 #include "oregen.h"
+#include "water.h"
+#include "biome.h"
+#include "trees.h"
 #include "lighting.h"
 #include "fastmath.h"
 #include "blockrenderer.h"
@@ -475,7 +479,7 @@ bool Chunk::intersects(AABB &other)
     return false;
 }
 
-bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFix dz, GLFix &dist, VECTOR3 &pos, AABB::SIDE &side, bool ignore_water)
+bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFix dz, GLFix &dist, VECTOR3 &pos, AABB::SIDE &side, bool hit_water_sources)
 {
     GLFix shortest_dist;
     if(aabb.intersectsRay(rx, ry, rz, dx, dy, dz, shortest_dist) == AABB::NONE)
@@ -504,7 +508,7 @@ bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFi
 
                 BLOCK_WDATA block = blocks[x][y][z];
 
-                if(block == BLOCK_AIR || (getBLOCK(block) == BLOCK_WATER && ignore_water))
+                if(block == BLOCK_AIR || (isFluid(block) && !(hit_water_sources && isWaterSource(block))))
                     continue;
 
                 AABB test = aabb;
@@ -535,6 +539,28 @@ bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFi
     return true;
 }
 
+// Crafti 1.3's ore pillars: below the surface layers a column is either all
+// stone or, where its noise is low, all one ore.
+static BLOCK deepBlock(const PerlinNoise &noise, int local_x, int local_z, int chunk_x, int chunk_z)
+{
+    GLFix noise_val = noise.noise(GLFix(local_x)/Chunk::SIZE + chunk_x, GLFix(local_z)/Chunk::SIZE + chunk_z, 10.5f);
+    if(noise_val >= GLFix(0.2f))
+        return BLOCK_STONE;
+
+    noise_val = noise.noise(GLFix(local_x)/Chunk::SIZE + chunk_x, GLFix(local_z)/Chunk::SIZE + chunk_z, 1000.5f);
+    const uint8_t test = (noise_val.value>>4) & 0xF;
+    if(test < 1)
+        return BLOCK_DIAMOND_ORE;
+    if(test < 2)
+        return BLOCK_REDSTONE_ORE;
+    if(test < 5)
+        return BLOCK_IRON_ORE;
+    return BLOCK_COAL_ORE;
+}
+
+// Salts for the per-column decoration rolls.
+enum : uint32_t { SALT_TREE = 0x7EE5, SALT_TREE_KIND = 0x4B1D, SALT_TREE_SHAPE = 0x5A4E, SALT_FLOWER = 0xF10E, SALT_CACTUS = 0xCAC7, SALT_BUSH = 0xB054 };
+
 void Chunk::generate()
 {
     //Everything air
@@ -543,18 +569,37 @@ void Chunk::generate()
     debug("Generating chunk %d:%d:%d...\t", x, y, z);
 
     const PerlinNoise &noise = world.noiseGenerator();
+    const uint32_t seed = world.worldSeed();
+    const int base_x = this->x * SIZE, base_y = this->y * SIZE, base_z = this->z * SIZE;
 
-    constexpr int max_trees = (Chunk::SIZE * Chunk::SIZE) / 45;
-    int trees = 0;
+    // Ground heights of this chunk's columns and the ring around them, for steepness.
+    int heights[SIZE + 2][SIZE + 2];
+    for(int x = -1; x <= SIZE; x++)
+        for(int z = -1; z <= SIZE; z++)
+            heights[x + 1][z + 1] = groundHeight(noise, base_x + x, base_z + z);
+
+    Biome biomes[SIZE][SIZE];
 
     for(int x = 0; x < SIZE; x++)
         for(int z = 0; z < SIZE; z++)
         {
-            GLFix noise_val = noise.noise((GLFix(x)/Chunk::SIZE + this->x)/4, (GLFix(z)/Chunk::SIZE + this->z)/4, 10);
-            int world_gen_min = 8, world_gen_max = World::HEIGHT * Chunk::SIZE * 0.7;
-            int height = world_gen_min + (noise_val * (world_gen_max - world_gen_min)).round();
-            int height_left = height - this->y * Chunk::SIZE;
-            int height_here = std::min(height_left, Chunk::SIZE);
+            const int height = heights[x + 1][z + 1];
+
+            // The biome only matters where its surface layers (at most 8 deep)
+            // or its water reach into this chunk.
+            const bool surface_here = height - 8 < base_y + SIZE && std::max(height, SEA_LEVEL) > base_y;
+            const Biome biome = biomes[x][z] = surface_here ? biomeAt(noise, base_x + x, base_z + z) : Biome::PLAINS;
+
+            int steepness = 0;
+            for(const int h : { heights[x][z + 1], heights[x + 2][z + 1], heights[x + 1][z], heights[x + 1][z + 2] })
+                steepness = std::max(steepness, std::abs(h - height));
+
+            // Seabeds and beaches are sand whatever the biome.
+            const Surface surface = isSandColumn(height) && biome != Biome::DESERT
+                    ? Surface{ BLOCK_SAND, BLOCK_SAND, 4, 0, 0 } : surfaceFor(biome, height, steepness);
+
+            const int height_left = height - base_y;
+            const int height_here = std::min(height_left, Chunk::SIZE);
 
             int y = 0;
 
@@ -564,53 +609,75 @@ void Chunk::generate()
 
             for(; y < height_here; y++)
             {
-                int to_surface = height_left - y;
-
-                //Deep underground
-                if(to_surface > 5)
-                {
-                    noise_val = noise.noise(GLFix(x)/Chunk::SIZE + this->x, GLFix(z)/Chunk::SIZE + this->z, 10.5f);
-                    if(noise_val < GLFix(0.2f))
-                    {
-                        noise_val = noise.noise(GLFix(x)/Chunk::SIZE + this->x, GLFix(z)/Chunk::SIZE + this->z, 1000.5f);
-
-                        uint8_t test = (noise_val.value>>4) & 0xF;
-
-                        if(test < 1)
-                            blocks[x][y][z] = BLOCK_DIAMOND_ORE;
-                        else if(test < 2)
-                            blocks[x][y][z] = BLOCK_REDSTONE_ORE;
-                        else if(test < 5)
-                            blocks[x][y][z] = BLOCK_IRON_ORE;
-                        else
-                            blocks[x][y][z] = BLOCK_COAL_ORE;
-                    }
-                    else
-                        blocks[x][y][z] = BLOCK_STONE;
-                }
-                else if(height > 10)
-                {
-                    if(to_surface == 1)
-                    {
-                        blocks[x][y][z] = BLOCK_GRASS;
-                        if((rand() & 0xFF) == 0x0)
-                            setGlobalBlockRelative(x, y + 1, z, getBLOCKWDATA(BLOCK_FLOWER, rand() & 0x1));
-                    }
-                    else
-                        blocks[x][y][z] = BLOCK_DIRT;
-                }
+                const int depth = height_left - y;   // 1 is the top block
+                if(depth == 1)
+                    blocks[x][y][z] = surface.top;
+                else if(depth <= 1 + surface.filler_depth)
+                    blocks[x][y][z] = surface.filler;
+                else if(depth <= 1 + surface.filler_depth + surface.under_depth)
+                    blocks[x][y][z] = surface.under;
                 else
-                    blocks[x][y][z] = BLOCK_SAND;
+                    blocks[x][y][z] = deepBlock(noise, x, z, this->x, this->z);
             }
-            if(trees < max_trees && height_left >= 0 && height_left <= Chunk::SIZE && noise.noise(GLFix(x)/Chunk::SIZE + this->x, GLFix(z)/Chunk::SIZE + this->z, 25) < GLFix(0.3f))
-            {
-                makeTree(x, height_here, z);
-                trees++;
-            }
+
+            // Oceans and lakes: still water from the ground up to sea level,
+            // frozen over in the cold.
+            fillSeaColumn(blocks, x, z, this->y, height, biomeFeatures(biome).frozen_water);
         }
 
     // Gold, emerald and Ancient Debris (new chunks only: loaded ones skip generate()).
-    generateOres(blocks, this->x, this->y, this->z, world.worldSeed());
+    generateOres(blocks, this->x, this->y, this->z, seed);
+
+    // Trees, flowers, cacti and dead bushes, on columns whose ground is in this chunk.
+    int trunks = 0, trunk_x[SIZE * SIZE], trunk_z[SIZE * SIZE];
+    for(int x = 0; x < SIZE; x++)
+        for(int z = 0; z < SIZE; z++)
+        {
+            const int height = heights[x + 1][z + 1];
+            const int ground = height - base_y - 1;    // local y of the top block
+            if(ground < 0 || ground >= SIZE || !isDryLand(height))
+                continue;
+
+            const int gx = base_x + x, gz = base_z + z;
+            const BiomeFeatures &f = biomeFeatures(biomes[x][z]);
+            const BLOCK top = getBLOCK(blocks[x][ground][z]);
+            const bool soil = top == BLOCK_GRASS || top == BLOCK_SNOWY_GRASS || top == BLOCK_DIRT;
+
+            if(soil && columnHash(gx, gz, seed, SALT_TREE) % 1000 < f.trees)
+            {
+                // Two blocks between trunks at least, so crowns don't merge into one.
+                bool crowded = false;
+                for(int i = 0; i < trunks && !crowded; ++i)
+                    crowded = std::abs(trunk_x[i] - x) <= 2 && std::abs(trunk_z[i] - z) <= 2;
+
+                if(!crowded)
+                {
+                    const uint32_t roll = columnHash(gx, gz, seed, SALT_TREE_KIND) % 1000;
+                    const TreeKind kind = roll < f.spruce ? TreeKind::SPRUCE : roll < f.spruce + f.birch ? TreeKind::BIRCH : TreeKind::OAK;
+                    if(placeTree(kind, x, ground + 1, z, columnHash(gx, gz, seed, SALT_TREE_SHAPE)))
+                    {
+                        trunk_x[trunks] = x;
+                        trunk_z[trunks++] = z;
+                        continue;
+                    }
+                }
+            }
+
+            if(top == BLOCK_GRASS && columnHash(gx, gz, seed, SALT_FLOWER) % 1000 < f.flowers)
+                setGlobalBlockRelative(x, ground + 1, z, getBLOCKWDATA(BLOCK_FLOWER, columnHash(gx, gz, seed, SALT_FLOWER + 1) & 1));
+            else if(top == BLOCK_SAND && columnHash(gx, gz, seed, SALT_CACTUS) % 1000 < f.cacti)
+            {
+                // Cacti stand alone: nothing beside them at any height.
+                bool open = true;
+                for(const int h : { heights[x][z + 1], heights[x + 2][z + 1], heights[x + 1][z], heights[x + 1][z + 2] })
+                    open = open && h <= height;
+                const int tall = 1 + static_cast<int>(columnHash(gx, gz, seed, SALT_CACTUS + 1) % 3);
+                for(int i = 0; open && i < tall; ++i)
+                    setGlobalBlockRelative(x, ground + 1 + i, z, BLOCK_CACTUS);
+            }
+            else if(top == BLOCK_SAND && columnHash(gx, gz, seed, SALT_BUSH) % 1000 < f.dead_bushes)
+                setGlobalBlockRelative(x, ground + 1, z, getBLOCKWDATA(BLOCK_FLOWER, FLOWER_DEAD_BUSH));
+        }
 
     debug("Done!\n");
 }
@@ -683,37 +750,39 @@ bool Chunk::isBlockPowered(const int x, const int y, const int z, bool ignore_re
 
 void Chunk::growTree(int local_x, int local_y, int local_z)
 {
-    // makeTree picks a random height and sometimes declines; the sapling then
-    // simply waits for another try.
-    makeTree(local_x, local_y, local_z);
+    // A tree that wouldn't fit under the sky stays a sapling and tries again.
+    const TreeKind kind = static_cast<TreeKind>(getBLOCKDATA(getGlobalBlockRelative(local_x, local_y, local_z)) % TREE_KINDS);
+    placeTree(kind, local_x, local_y, local_z, static_cast<uint32_t>(rand()));
 }
 
-void Chunk::makeTree(unsigned int x, unsigned int y, unsigned int z)
+bool Chunk::placeTree(TreeKind kind, int x, int y, int z, uint32_t rnd)
 {
-    int max_height = World::HEIGHT * Chunk::SIZE - (y + this->y * Chunk::SIZE);
+    static TreeBlock shape[MAX_TREE_BLOCKS];
+    const int top = World::HEIGHT * SIZE;
+    const int n = treeShape(kind, rnd, top - (this->y * SIZE + y), shape);
+    if(n == 0)
+        return false;
 
-    max_height = std::min(max_height - 4, rand() & 0x5);
-
-    if(max_height < 5)
-        return;
-
-    for(unsigned int y1 = y; y1 < y + max_height; ++y1)
-        setGlobalBlockRelative(x, y1, z, BLOCK_WOOD);
-
-    for(unsigned int y1 = y + max_height; y1 < y + max_height + 2; ++y1)
+    for(int i = 0; i < n; ++i)
     {
-        setGlobalBlockRelative(x, y1, z-1, BLOCK_LEAVES);
-        setGlobalBlockRelative(x-1, y1, z-1, BLOCK_LEAVES);
-        setGlobalBlockRelative(x+1, y1, z-1, BLOCK_LEAVES);
-        setGlobalBlockRelative(x, y1, z, BLOCK_LEAVES);
-        setGlobalBlockRelative(x-1, y1, z, BLOCK_LEAVES);
-        setGlobalBlockRelative(x+1, y1, z, BLOCK_LEAVES);
-        setGlobalBlockRelative(x, y1, z+1, BLOCK_LEAVES);
-        setGlobalBlockRelative(x-1, y1, z+1, BLOCK_LEAVES);
-        setGlobalBlockRelative(x+1, y1, z+1, BLOCK_LEAVES);
-    }
+        const TreeBlock &t = shape[i];
+        const int bx = x + t.dx, by = y + t.dy, bz = z + t.dz;
 
-    setGlobalBlockRelative(x, y + max_height + 2, z, BLOCK_LEAVES);
+        // Into this chunk or a loaded one only where there's room (logs may
+        // also replace leaves and the sapling); into chunks not made yet
+        // regardless, as the block waits there until the chunk is generated.
+        bool room = true;
+        if(inBounds(bx, by, bz) || world.isLoaded(bx + this->x * SIZE, by + this->y * SIZE, bz + this->z * SIZE))
+        {
+            const BLOCK here = getBLOCK(getGlobalBlockRelative(bx, by, bz));
+            const bool is_log = t.block == logFor(kind);
+            room = here == BLOCK_AIR
+                    || (is_log && (here == BLOCK_SAPLING || here == BLOCK_LEAVES || here == BLOCK_SPRUCE_LEAVES || here == BLOCK_BIRCH_LEAVES));
+        }
+        if(room)
+            setGlobalBlockRelative(bx, by, bz, t.block);
+    }
+    return true;
 }
 
 void Chunk::spawnDestructionParticles(const int x, const int y, const int z)

@@ -38,14 +38,21 @@ bool buildTable()
     def(BLOCK_EMERALD_BLOCK, 500, PICK, 3);
     def(BLOCK_WOOL, 80, NONE, 0);
     def(BLOCK_ANCIENT_DEBRIS, 3000, PICK, 4, SELF, 0, true);   // needs diamond; survives explosions
+    def(BLOCK_OBSIDIAN, 5000, PICK, 4, SELF, 0, true);         // needs diamond; survives explosions
+    def(BLOCK_SANDSTONE, 80, PICK, 1);
     def(BLOCK_REDSTONE_ORE, 300, PICK, 3, drops(ITEM_REDSTONE_DUST, 4, 5));
     def(BLOCK_PRESSURE_PLATE, 50, PICK, 1);
 
     def(BLOCK_DIRT, 50, SHOVEL, 0);
     def(BLOCK_SAND, 50, SHOVEL, 0);
     def(BLOCK_GRASS, 60, SHOVEL, 0, drops(BLOCK_DIRT));
+    def(BLOCK_SNOWY_GRASS, 60, SHOVEL, 0, drops(BLOCK_DIRT));
+    def(BLOCK_SNOW, 20, SHOVEL, 1, drops(ITEM_SNOWBALL, 4, 4));   // only with a shovel
 
     def(BLOCK_WOOD, 200, AXE, 0);
+    def(BLOCK_SPRUCE_LOG, 200, AXE, 0);
+    def(BLOCK_BIRCH_LOG, 200, AXE, 0);
+    def(BLOCK_CACTUS, 40, NONE, 0);
     def(BLOCK_PLANKS_NORMAL, 200, AXE, 0);
     def(BLOCK_PLANKS_DARK, 200, AXE, 0);
     def(BLOCK_PLANKS_BRIGHT, 200, AXE, 0);
@@ -57,6 +64,9 @@ bool buildTable()
     def(BLOCK_DOOR, 300, AXE, 0);
 
     def(BLOCK_LEAVES, 20, NONE, 0, NOTHING);   // sapling 1 in 20 or apple 1 in 200: see mining.cpp
+    def(BLOCK_SPRUCE_LEAVES, 20, NONE, 0, NOTHING);
+    def(BLOCK_BIRCH_LEAVES, 20, NONE, 0, NOTHING);
+    def(BLOCK_ICE, 50, PICK, 0, NOTHING);       // melts into water when broken: see worldtask.cpp
     def(BLOCK_GLASS, 30, NONE, 0, NOTHING);
     def(BLOCK_GLOWSTONE, 30, NONE, 0, SELF, 15);
     def(BLOCK_REDSTONE_LAMP, 30, NONE, 0, SELF, 15);   // only while lit; checked in Phase 5

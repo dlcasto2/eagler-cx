@@ -9,6 +9,7 @@
 #include "terrain.h"
 #include "texturetools.h"
 #include "worldtask.h"
+#include "trees.h"
 
 BlockListTask block_list_task;
 
@@ -17,9 +18,18 @@ static const BLOCK_WDATA user_selectable[] = {
     BLOCK_COBBLESTONE,
     BLOCK_DIRT,
     BLOCK_GRASS,
+    BLOCK_SNOWY_GRASS,
+    BLOCK_SNOW,
+    BLOCK_ICE,
     BLOCK_SAND,
+    BLOCK_SANDSTONE,
+    BLOCK_CACTUS,
     BLOCK_WOOD,
+    BLOCK_SPRUCE_LOG,
+    BLOCK_BIRCH_LOG,
     BLOCK_LEAVES,
+    BLOCK_SPRUCE_LEAVES,
+    BLOCK_BIRCH_LEAVES,
     BLOCK_PLANKS_NORMAL,
     BLOCK_PLANKS_DARK,
     BLOCK_PLANKS_BRIGHT,
@@ -33,6 +43,7 @@ static const BLOCK_WDATA user_selectable[] = {
     BLOCK_REDSTONE_ORE,
     BLOCK_EMERALD_ORE,
     BLOCK_ANCIENT_DEBRIS,
+    BLOCK_OBSIDIAN,
     BLOCK_EMERALD_BLOCK,
     BLOCK_WOOL,
     BLOCK_IRON,
@@ -53,10 +64,13 @@ static const BLOCK_WDATA user_selectable[] = {
     getBLOCKWDATA(BLOCK_LAVA, RANGE_LAVA),
     getBLOCKWDATA(BLOCK_FLOWER, 0),
     getBLOCKWDATA(BLOCK_FLOWER, 1),
+    getBLOCKWDATA(BLOCK_FLOWER, FLOWER_DEAD_BUSH),
     getBLOCKWDATA(BLOCK_MUSHROOM, 0),
     getBLOCKWDATA(BLOCK_MUSHROOM, 1),
     getBLOCKWDATA(BLOCK_WHEAT, 0),
     BLOCK_SAPLING,
+    getBLOCKWDATA(BLOCK_SAPLING, static_cast<uint8_t>(TreeKind::SPRUCE)),
+    getBLOCKWDATA(BLOCK_SAPLING, static_cast<uint8_t>(TreeKind::BIRCH)),
     BLOCK_SPIDERWEB,
     BLOCK_TORCH,
     BLOCK_CAKE,

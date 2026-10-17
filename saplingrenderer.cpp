@@ -3,15 +3,19 @@
 #include <cstdlib>
 
 #include "chunk.h"
+#include "trees.h"
 
 SaplingRenderer::SaplingRenderer()
 {
-    setEntry(0, 15, 0, "Oak Sapling", BLOCK_SIZE * 3 / 4, BLOCK_SIZE * 3 / 4, BLOCK_SIZE * 3 / 4);
+    const GLFix size = BLOCK_SIZE * 3 / 4;
+    setEntry(static_cast<uint8_t>(TreeKind::OAK), 15, 0, "Oak Sapling", size, size, size);
+    setEntry(static_cast<uint8_t>(TreeKind::SPRUCE), 15, 3, "Spruce Sapling", size, size, size);
+    setEntry(static_cast<uint8_t>(TreeKind::BIRCH), 15, 4, "Birch Sapling", size, size, size);
 }
 
 bool SaplingRenderer::canStayOn(BLOCK below)
 {
-    return below == BLOCK_DIRT || below == BLOCK_GRASS;
+    return below == BLOCK_DIRT || below == BLOCK_GRASS || below == BLOCK_SNOWY_GRASS;
 }
 
 void SaplingRenderer::tick(const BLOCK_WDATA /*block*/, int local_x, int local_y, int local_z, Chunk &c)

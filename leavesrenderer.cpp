@@ -4,12 +4,12 @@ void LeavesRenderer::geometryNormalBlock(const BLOCK_WDATA /*block*/, const int 
 {
     if(isTransparent())
     {
-        const TextureAtlasEntry &tex = terrain_atlas[4][3].current;
-        BlockRenderer::renderNormalConnectedBlockSide(BLOCK_LEAVES, local_x, local_y, local_z, side, tex, TEXTURE_TRANSPARENT | TEXTURE_DRAW_BACKFACE, c);
+        const TextureAtlasEntry &tex = terrain_atlas[fancy_x][fancy_y].current;
+        BlockRenderer::renderNormalConnectedBlockSide(block, local_x, local_y, local_z, side, tex, TEXTURE_TRANSPARENT | TEXTURE_DRAW_BACKFACE, c);
     }
     else
     {
-        const TextureAtlasEntry &tex = block_textures[BLOCK_LEAVES][BLOCK_FRONT].current;
+        const TextureAtlasEntry &tex = block_textures[block][BLOCK_FRONT].current;
         BlockRenderer::renderNormalBlockSide(local_x, local_y, local_z, side, tex, c, 0);
     }
 }
@@ -21,7 +21,7 @@ bool LeavesRenderer::isOpaque(const BLOCK_WDATA)
 
 void LeavesRenderer::drawPreview(const BLOCK_WDATA /*block*/, TEXTURE &dest, int x, int y)
 {
-    const TextureAtlasEntry &tex = isTransparent() ? terrain_atlas[4][3].resized : block_textures[BLOCK_LEAVES][BLOCK_FRONT].resized;
+    const TextureAtlasEntry &tex = isTransparent() ? terrain_atlas[fancy_x][fancy_y].resized : block_textures[block][BLOCK_FRONT].resized;
 
     BlockRenderer::drawTextureAtlasEntry(*terrain_resized, tex, dest, x, y);
 }

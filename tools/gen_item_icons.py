@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws the 16x16 item icons for items 256-344 and writes item_icons.cpp.
+"""Draws the 16x16 item icons for items 256-347 and writes item_icons.cpp.
 
 All icons are original: each is a hand-drawn shape template below,
 recoloured per material. Nothing is taken from Minecraft or Eaglercraft.
@@ -430,6 +430,62 @@ T['chop'] = [
     '................',
 ]
 
+T['bucket'] = [
+    '................',
+    '................',
+    '...oooooooooo...',
+    '..ohhhhhhhhhho..',
+    '.ohxxxxxxxxxxso.',
+    '.ohxxxxxxxxxxso.',
+    '..oshhhhhhhhso..',
+    '..ohmmmmmmmmso..',
+    '..ohmmmmmmmmso..',
+    '...ohmmmmmmso...',
+    '...ohmmmmmmso...',
+    '...ohmmmmmmso...',
+    '....ohmmmmso....',
+    '....oooooooo....',
+    '................',
+    '................',
+]
+T['water_bucket'] = [
+    '................',
+    '................',
+    '...oooooooooo...',
+    '..ohhhhhhhhhho..',
+    '.ohxxwwxxxxxxso.',
+    '.ohxxxxxxwwxxso.',
+    '..oshhhhhhhhso..',
+    '..ohmmmmmmmmso..',
+    '..ohmmmmmmmmso..',
+    '...ohmmmmmmso...',
+    '...ohmmmmmmso...',
+    '...ohmmmmmmso...',
+    '....ohmmmmso....',
+    '....oooooooo....',
+    '................',
+    '................',
+]
+
+T['snowball'] = [
+    '................',
+    '................',
+    '................',
+    '......oooo......',
+    '....oohhmmoo....',
+    '...ohhhmmmmso...',
+    '...ohhmmmmmso...',
+    '..ohmmmmmmxsso..',
+    '..ommmmmmmmsso..',
+    '..ommmxmmmmsso..',
+    '...ommmmmmsso...',
+    '...osmmmmssso...',
+    '....oossssoo....',
+    '......oooo......',
+    '................',
+    '................',
+]
+
 # Colour sets: (outline, main, highlight, shadow)
 def pal(o, m, h, s, w=(150, 104, 52), d=(96, 64, 30), x=None):
     return {'o': o, 'm': m, 'h': h, 's': s, 'w': w, 'd': d, 'x': x if x else s}
@@ -484,9 +540,12 @@ SPEC.update({
     296: ('steak', pal((70, 14, 20), (214, 64, 70), (250, 140, 140), (150, 30, 40), w=(250, 250, 250), x=(255, 220, 220))),
     297: ('steak', pal((44, 20, 10), (150, 88, 52), (200, 140, 96), (100, 56, 30), w=(240, 220, 200), x=(190, 130, 90))),
     298: ('steak', pal((30, 40, 16), (130, 120, 60), (170, 160, 96), (90, 80, 34), w=(160, 170, 110), x=(110, 60, 50))),
+    345: ('bucket', dict(MATERIAL['iron'], x=(66, 66, 72))),
+    346: ('water_bucket', dict(MATERIAL['iron'], x=(36, 92, 212), w=(150, 200, 255))),
+    347: ('snowball', pal((70, 86, 110), (236, 244, 250), (255, 255, 255), (180, 200, 222), x=(206, 222, 238))),
 })
 
-FIRST_ITEM, LAST_ITEM = 256, 344
+FIRST_ITEM, LAST_ITEM = 256, 347
 COLS = 16
 
 

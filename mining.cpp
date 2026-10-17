@@ -1,6 +1,7 @@
 #include "mining.h"
 
 #include "blockdefs.h"
+#include "trees.h"
 
 namespace {
 
@@ -69,15 +70,24 @@ ItemStack blockDropFor(BLOCK_WDATA target, ItemId tool, uint32_t &rng)
     if(!d.defined || !canHarvest(target, tool))
         return ItemStack();
 
-    // Oak leaves (1.8.8): a sapling 1 time in 20, otherwise an apple 1 time in 200.
-    if(b == BLOCK_LEAVES)
+    // Leaves (1.8.8): their own sapling 1 time in 20, otherwise from oak an
+    // apple 1 time in 200.
+    if(b == BLOCK_LEAVES || b == BLOCK_SPRUCE_LEAVES || b == BLOCK_BIRCH_LEAVES)
     {
+        const TreeKind kind = b == BLOCK_SPRUCE_LEAVES ? TreeKind::SPRUCE : b == BLOCK_BIRCH_LEAVES ? TreeKind::BIRCH : TreeKind::OAK;
         const uint32_t roll = nextRandom(rng) % 1000;
         if(roll < 50)
-            return ItemStack(BLOCK_SAPLING, 1);
-        if(roll < 55)
+            return ItemStack(BLOCK_SAPLING, 1, static_cast<uint16_t>(kind));
+        if(roll < 55 && kind == TreeKind::OAK)
             return ItemStack(ITEM_APPLE, 1);
         return ItemStack();
+    }
+
+    // A dead bush (1.8.8): up to two sticks.
+    if(b == BLOCK_FLOWER && getBLOCKDATA(target) == FLOWER_DEAD_BUSH)
+    {
+        const uint8_t sticks = static_cast<uint8_t>(nextRandom(rng) % 3);
+        return sticks ? ItemStack(ITEM_STICK, sticks) : ItemStack();
     }
 
     if(d.drop.item == 0)
@@ -94,9 +104,9 @@ ItemStack blockDropFor(BLOCK_WDATA target, ItemId tool, uint32_t &rng)
     if(d.drop.item != DROP_SELF)
         return ItemStack(d.drop.item, static_cast<uint8_t>(count));
 
-    // Flowers and mushrooms keep their kind; everything else drops without
-    // its orientation or state.
-    const bool keep_data = b == BLOCK_FLOWER || b == BLOCK_MUSHROOM;
+    // Flowers, mushrooms and saplings keep their kind; everything else drops
+    // without its orientation or state.
+    const bool keep_data = b == BLOCK_FLOWER || b == BLOCK_MUSHROOM || b == BLOCK_SAPLING;
     return ItemStack(b, static_cast<uint8_t>(count), keep_data ? getBLOCKDATA(target) : 0);
 }
 

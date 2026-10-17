@@ -34,6 +34,8 @@ private:
     void renderSky();
     void tickMining(bool on_ground);
     bool useBlock(int bx, int by, int bz);          // 7 on a chest, furnace, crafting table, smithing table or bed
+    bool useBucket();                               // 7 with a bucket: scoop or pour water
+    VECTOR3 besideSelection() const;                // the block against the face being aimed at
     bool placeBed(int fx, int fy, int fz);
     void removeBlock(int bx, int by, int bz, BLOCK_WDATA target);   // with chest contents and bed halves
 

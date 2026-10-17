@@ -148,13 +148,13 @@ TEST_CASE("the inventory lists only simple recipes, craftable first") {
     int list[MAX_RECIPES];
     CHECK(recipeCount() <= MAX_RECIPES);
     PlayerInventory inv;
-    CHECK(listRecipes(inv, false, list, MAX_RECIPES) == 11);   // everything that fits 2x2
+    CHECK(listRecipes(inv, false, list, MAX_RECIPES) == 15);   // everything that fits 2x2
     CHECK(listRecipes(inv, true, list, MAX_RECIPES) == recipeCount());
 
     inv.add(ItemStack(ITEM_COAL, 1));
     inv.add(ItemStack(ITEM_STICK, 1));
     const int n = listRecipes(inv, false, list, MAX_RECIPES);
-    CHECK(n == 11);
+    CHECK(n == 15);
     CHECK(recipeAt(list[0]).result == BLOCK_TORCH);
     CHECK(recipeAt(list[1]).result == BLOCK_PLANKS_NORMAL);
 
@@ -317,4 +317,26 @@ TEST_CASE("filling the grid from the inventory, one set at a time") {
     CHECK_FALSE(fillGrid(inv, other, 3, recipeFor(ITEM_STICK)));   // something else is in the way
     ItemStack small[4];
     CHECK_FALSE(fillGrid(inv, small, 2, pick));     // too big for 2x2
+}
+
+TEST_CASE("a bucket is three iron ingots in a V at a crafting table") {
+    const Recipe &r = recipeFor(ITEM_BUCKET);
+    CHECK(r.result_count == 1);
+    CHECK(needsTable(r));
+
+    const ItemStack IRON(ITEM_IRON_INGOT, 1);
+    ItemStack grid[9];
+    put(grid, 3, "a a" " a " "   ", IRON);
+    REQUIRE(matchGrid(grid, 3) >= 0);
+    CHECK(recipeAt(matchGrid(grid, 3)).result == ITEM_BUCKET);
+    put(grid, 3, "   " "a a" " a ", IRON);   // lower down works too
+    CHECK(recipeAt(matchGrid(grid, 3)).result == ITEM_BUCKET);
+    put(grid, 3, "aaa" "   " "   ", IRON);
+    CHECK(matchGrid(grid, 3) < 0);
+
+    PlayerInventory inv;
+    inv.add(ItemStack(ITEM_IRON_INGOT, 3));
+    CHECK(craftOnce(inv, r) == CraftResult::OK);
+    CHECK(inv.count(ITEM_BUCKET, 0) == 1);
+    CHECK(inv.count(ITEM_IRON_INGOT, 0) == 0);
 }

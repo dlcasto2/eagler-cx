@@ -10,11 +10,11 @@
 // Test double: solid BLOCK_SIZE cubes at integer cells. Boxes that merely
 // touch a cube don't count (strict overlap), unlike the game's AABB::intersects.
 struct GridWorld : CollisionQuery {
-    std::set<std::tuple<int, int, int>> solid;
+    std::set<std::tuple<int, int, int>> solid, water;
 
-    bool intersects(const AABB &b) const override
+    static bool overlapsAny(const std::set<std::tuple<int, int, int>> &cells, const AABB &b)
     {
-        for(const auto &c : solid)
+        for(const auto &c : cells)
         {
             const GLFix lx = std::get<0>(c) * BLOCK_SIZE, ly = std::get<1>(c) * BLOCK_SIZE, lz = std::get<2>(c) * BLOCK_SIZE;
             if(b.high_x > lx && b.low_x < lx + BLOCK_SIZE
@@ -24,6 +24,9 @@ struct GridWorld : CollisionQuery {
         }
         return false;
     }
+
+    bool intersects(const AABB &b) const override { return overlapsAny(solid, b); }
+    bool touchesWater(const AABB &b) const override { return overlapsAny(water, b); }
 };
 
 // A 102-wide, 230-tall player box whose bottom centre sits at (x, y, z).
