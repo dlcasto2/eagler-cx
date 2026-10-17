@@ -32,7 +32,7 @@ public:
     void setGlobalBlockRelative(const int x, const int y, const int z, const BLOCK_WDATA block, bool set_dirty = true);
     AABB &getAABB() { return aabb; }
     bool intersects(AABB &other);
-    bool intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, GLFix &dist, VECTOR3 &pos, AABB::SIDE &side, bool ignore_water);
+    bool intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, GLFix &dist, VECTOR3 &pos, AABB::SIDE &side, bool hit_water_sources);
     void generate();
     bool saveToFile(gzFile file);
     bool loadFromFile(gzFile file);

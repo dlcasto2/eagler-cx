@@ -1,11 +1,16 @@
 #include "fluidrenderer.h"
 
+#include "water.h"
+
 /* Behaviour of fluids (Water + Lava):
  * - Each block has a range assigned. Placed blocks have max range (see maxRange)
  * - If there's a floor, spread sideways into blocks with range - 1
  * - If there's no floor, spread down with same range (but not max range)
  * - If there's the same fluid above (any range), stay
  * - If not max range, blocks despawn unless there's an adjacent block with higher range
+ * - 1.8.8 rules (see water.h): flowing water between two sources becomes a source,
+ *   lava touching water hardens into obsidian or cobblestone, and lava flowing
+ *   down onto water turns it to stone
  *
  * Max range blocks are rendered as full blocks. If there's fluid above, it's also rendered
  * as a full block. Otherwise the average fluid levels is used for each corner's height.
@@ -177,9 +182,32 @@ void FluidRenderer::tick(const BLOCK_WDATA block, int local_x, int local_y, int 
             block_front = c.getGlobalBlockRelative(local_x, local_y, local_z - 1),
             block_back = c.getGlobalBlockRelative(local_x, local_y, local_z + 1);
 
+    // Lava touching water (but not from below) hardens
+    if(getBLOCK(block) == BLOCK_LAVA)
+    {
+        const bool touches_water = getBLOCK(block_top) == BLOCK_WATER || getBLOCK(block_left) == BLOCK_WATER
+                || getBLOCK(block_right) == BLOCK_WATER || getBLOCK(block_front) == BLOCK_WATER || getBLOCK(block_back) == BLOCK_WATER;
+        const BLOCK hardened = lavaHardensInto(block, touches_water);
+        if(hardened != BLOCK_AIR)
+        {
+            c.setLocalBlock(local_x, local_y, local_z, hardened);
+            return;
+        }
+    }
+
     //If a block doesn't have the full range, it despawns without an adjacent block > range
     if(range == maxRange(block))
         goto survive;
+
+    // Infinite water: flowing water between two sources becomes one
+    {
+        const BLOCK_WDATA sides[4] = { block_left, block_right, block_front, block_back };
+        if(becomesWaterSource(block, sides, block_bottom, global_block_renderer.isObstacle(block_bottom)))
+        {
+            c.setLocalBlock(local_x, local_y, local_z, WATER_SOURCE);
+            return;
+        }
+    }
 
     //If there is any fluid above, survival doesn't depend on its range
     if(getBLOCK(block_top) == getBLOCK(block))
@@ -224,6 +252,13 @@ void FluidRenderer::tick(const BLOCK_WDATA block, int local_x, int local_y, int 
         p.pos.x += randMax(100) - 50;
         p.pos.z += randMax(100) - 50;
         c.addParticle(p);
+    }
+
+    // Lava pouring onto water turns it to stone
+    if(getBLOCK(block) == BLOCK_LAVA && getBLOCK(block_bottom) == BLOCK_WATER)
+    {
+        c.setGlobalBlockRelative(local_x, local_y - 1, local_z, LAVA_ON_WATER);
+        return;
     }
 
     //Either flow downwards or spread

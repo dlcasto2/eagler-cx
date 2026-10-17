@@ -63,6 +63,7 @@ const Recipe recipes[] = {
     shaped(BLOCK_DOOR, 3, planks(6), none(), "aa", "aa", "aa"),
     shaped(BLOCK_TNT, 1, one(ITEM_GUNPOWDER, 5), one(BLOCK_SAND, 4), "aba", "bab", "aba"),
     shaped(ITEM_BREAD, 1, one(ITEM_WHEAT, 3), none(), "aaa"),
+    shaped(ITEM_BUCKET, 1, iron(3), none(), "a a", " a "),
 
     // Redstone
     shaped(BLOCK_REDSTONE_TORCH, 1, one(ITEM_REDSTONE_DUST, 1), sticks(1), "a", "b"),

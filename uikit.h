@@ -20,6 +20,9 @@ void fillRect(TEXTURE &dst, int x, int y, int w, int h, COLOR c);
 // Halves the brightness (translucent black) / blends 50% toward white.
 void darkenRect(TEXTURE &dst, int x, int y, int w, int h);
 void lightenRect(TEXTURE &dst, int x, int y, int w, int h);
+// Blends every pixel half and half with c.
+void tintRect(TEXTURE &dst, int x, int y, int w, int h, COLOR c);
+constexpr COLOR UNDERWATER_TINT = 0x1216;   // a sea blue, RGB (16, 64, 176)
 
 // A light grey bevelled panel with a dark outline.
 void drawPanel(TEXTURE &dst, int x, int y, int w, int h);

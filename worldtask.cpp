@@ -22,6 +22,7 @@
 #include "gui_art.h"
 #include "particle.h"
 #include "texturetools.h"
+#include "water.h"
 
 #include "aabb.h"
 #include "blockrenderer.h"
@@ -162,7 +163,8 @@ void WorldTask::logic()
     {
         GLFix dx = fast_sin(yr)*fast_cos(xr), dy = -fast_sin(xr), dz = fast_cos(yr)*fast_cos(xr);
         GLFix dist;
-        if(!world.intersectsRay(x, y + eye_pos, z, dx, dy, dz, selection_pos, selection_side, dist, in_water))
+        const ItemStack &held = player_inventory.selectedStack();
+        if(!world.intersectsRay(x, y + eye_pos, z, dx, dy, dz, selection_pos, selection_side, dist, !held.empty() && aimsAtWater(held.id)))
             selection_side = AABB::NONE;
         else
             selection_pos_abs = {x + dx * dist, y + eye_pos + dy * dist, z + dz * dist};
@@ -191,13 +193,16 @@ void WorldTask::logic()
         if(useBlock(static_cast<int>(selection_pos.x), static_cast<int>(selection_pos.y), static_cast<int>(selection_pos.z)))
             return;
 
+        if(useBucket())
+            return;
+
         if(world.intersect(aabb))
             return;
 
         if(world.blockAction(selection_pos.x, selection_pos.y, selection_pos.z))
             return;
 
-        BLOCK_WDATA current_block = world.getBlock(selection_pos.x, selection_pos.y, selection_pos.z),
+        BLOCK_WDATA current_block,
                     block_to_place = current_inventory.currentBlock();
 
         if(block_to_place == BLOCK_AIR)
@@ -213,42 +218,7 @@ void WorldTask::logic()
                 held = ItemStack();
         };
 
-        // When placing fluid onto a non-full fluid block of the same type, "fill" it
-        if(current_block != block_to_place
-           && ((getBLOCK(current_block) == BLOCK_WATER && getBLOCK(block_to_place) == BLOCK_WATER)
-               || (getBLOCK(current_block) == BLOCK_LAVA && getBLOCK(block_to_place) == BLOCK_LAVA)))
-        {
-            world.changeBlock(selection_pos.x, selection_pos.y, selection_pos.z, block_to_place);
-            useOne();
-            return;
-        }
-
-        VECTOR3 pos = selection_pos;
-        switch(selection_side)
-        {
-        case AABB::BACK:
-            ++pos.z;
-            break;
-        case AABB::FRONT:
-            --pos.z;
-            break;
-        case AABB::LEFT:
-            --pos.x;
-            break;
-        case AABB::RIGHT:
-            ++pos.x;
-            break;
-        case AABB::BOTTOM:
-            --pos.y;
-            break;
-        case AABB::TOP:
-            ++pos.y;
-            break;
-        default:
-            puts("This can't normally happen #1");
-            break;
-        }
-
+        const VECTOR3 pos = besideSelection();
         current_block = world.getBlock(pos.x, pos.y, pos.z);
 
         if(getBLOCK(block_to_place) == BLOCK_BED)
@@ -262,8 +232,8 @@ void WorldTask::logic()
         if(getBLOCK(block_to_place) == BLOCK_SAPLING && !SaplingRenderer::canStayOn(getBLOCK(world.getBlock(pos.x, pos.y - 1, pos.z))))
             return;
 
-        //Only set the block if there's air
-        if(current_block == BLOCK_AIR || (in_water && getBLOCK(current_block) == BLOCK_WATER))
+        //Only set the block if there's air or a fluid, which it pushes out
+        if(current_block == BLOCK_AIR || isFluid(current_block))
         {
             if(!global_block_renderer.isOriented(block_to_place))
                 world.changeBlock(pos.x, pos.y, pos.z, block_to_place);
@@ -378,13 +348,15 @@ void WorldTask::tick()
     motion.vy = vy;
     motion.on_ground = can_jump;
 
+    // Eyes underwater: air runs down, mining is slower and the view turns blue.
     const bool head_in_water = getBLOCK(world.getBlock((x / BLOCK_SIZE).floor(), ((y + eye_pos) / BLOCK_SIZE).floor(), (z / BLOCK_SIZE).floor())) == BLOCK_WATER;
     in_water = head_in_water;
+    player_state.air_ticks = nextAirTicks(player_state.air_ticks, head_in_water, player_state.mode == GameMode::SURVIVAL);
 
     const GLFix walk = velocityPerTick(speed(), V13_FPS);
     const bool auto_jump = settings_task.getValue(SettingsTask::AUTO_JUMP) != 0;
 
-    playerTick(world_collision, box, motion, PlayerInput{input_forward, input_strafe, input_jump}, yr, walk, head_in_water, auto_jump);
+    playerTick(world_collision, box, motion, PlayerInput{input_forward, input_strafe, input_jump}, yr, walk, auto_jump);
 
     x = (box.low_x + box.high_x) / 2;
     y = box.low_y;
@@ -463,6 +435,80 @@ void WorldTask::renderSky()
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glBindTexture(terrain_current);
+}
+
+VECTOR3 WorldTask::besideSelection() const
+{
+    VECTOR3 pos = selection_pos;
+    switch(selection_side)
+    {
+    case AABB::BACK:
+        ++pos.z;
+        break;
+    case AABB::FRONT:
+        --pos.z;
+        break;
+    case AABB::LEFT:
+        --pos.x;
+        break;
+    case AABB::RIGHT:
+        ++pos.x;
+        break;
+    case AABB::BOTTOM:
+        --pos.y;
+        break;
+    case AABB::TOP:
+        ++pos.y;
+        break;
+    default:
+        puts("This can't normally happen #1");
+        break;
+    }
+    return pos;
+}
+
+bool WorldTask::useBucket()
+{
+    ItemStack &held = player_inventory.selectedStack();
+    if(held.empty() || (held.id != ITEM_BUCKET && held.id != ITEM_WATER_BUCKET))
+        return false;
+
+    // Creative keeps its bucket, full or empty, as in 1.8.8.
+    const bool survival = player_state.mode == GameMode::SURVIVAL;
+
+    if(held.id == ITEM_BUCKET)
+    {
+        // The ray stops at water sources while an empty bucket is held.
+        const int bx = static_cast<int>(selection_pos.x), by = static_cast<int>(selection_pos.y), bz = static_cast<int>(selection_pos.z);
+        if(!canScoop(world.getBlock(bx, by, bz)))
+            return true;
+
+        world.changeBlock(bx, by, bz, BLOCK_AIR);
+        if(!survival)
+            return true;
+
+        if(held.count == 1)
+            held = ItemStack(ITEM_WATER_BUCKET, 1);
+        else
+        {
+            --held.count;
+            // The full bucket goes into the inventory, or at your feet if it's full.
+            const ItemStack full(ITEM_WATER_BUCKET, 1);
+            if(player_inventory.add(full) > 0)
+                spawnDrop(entity_pool, x, y + BLOCK_SIZE / 2, z, full, player_inventory);
+        }
+        return true;
+    }
+
+    // A water bucket pours a source against the face you aim at.
+    const VECTOR3 pos = besideSelection();
+    if(!canPourInto(world.getBlock(pos.x, pos.y, pos.z)))
+        return true;
+
+    world.changeBlock(pos.x, pos.y, pos.z, WATER_SOURCE);
+    if(survival)
+        held = ItemStack(ITEM_BUCKET, 1);
+    return true;
 }
 
 bool WorldTask::useBlock(int bx, int by, int bz)
@@ -719,6 +765,10 @@ void WorldTask::render()
     crosshairPixel(2, 0);
     crosshairPixel(0, 1);
     crosshairPixel(0, 2);
+
+    // Underwater the view takes on the water's colour.
+    if(in_water)
+        tintRect(*screen, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UNDERWATER_TINT);
 
     //Don't draw the inventory when drawing the background for BlockListTask
     if(draw_inventory)

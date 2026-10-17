@@ -19,11 +19,19 @@ struct PlayerInput {
 struct PlayerMotion {
     GLFix vy = 0;
     bool on_ground = false;
+    bool swimming = false;   // the body was in water this tick
 };
 
+// The part of the player that has to be in water to swim: as in 1.8.8, the
+// box less 0.4 blocks at the top and bottom. Rising past the surface ends
+// the swim with your feet about 0.4 blocks under it.
+AABB swimBox(const AABB &player_box);
+
 // One tick of player physics: walk by (forward, strafe) at yaw, jump, gravity,
-// then collision. auto_jump hops one-block steps (Task 12).
+// then collision. auto_jump hops one-block steps (Task 12). In water the
+// player swims instead (see SWIM_SINK_PER_TICK), and pushing against a bank
+// up to 0.6 blocks above the feet steps onto it, as 1.8.8 entities do.
 void playerTick(const CollisionQuery &world, AABB &box, PlayerMotion &m, const PlayerInput &in,
-                GLFix yaw, GLFix walk_per_tick, bool head_in_water, bool auto_jump);
+                GLFix yaw, GLFix walk_per_tick, bool auto_jump);
 
 #endif // PLAYER_MOTION_H

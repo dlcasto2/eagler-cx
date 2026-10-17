@@ -28,7 +28,9 @@ public:
     void setPosition(int x, int y, int z);
     bool blockAction(const int x, const int y, const int z);
     bool intersect(AABB &other) const;
-    bool intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, VECTOR3 &result, AABB::SIDE &side, GLFix &dist, bool ignore_water) const;
+    // Fluids are passed through, as in Minecraft, except water sources when
+    // hit_water_sources is set (an empty bucket aims at them).
+    bool intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, VECTOR3 &result, AABB::SIDE &side, GLFix &dist, bool hit_water_sources) const;
     const PerlinNoise &noiseGenerator() const;
     uint32_t worldSeed() const { return *seed; }
     void clear();
@@ -70,6 +72,7 @@ class WorldCollision : public CollisionQuery
 {
 public:
     bool intersects(const AABB &box) const override;
+    bool touchesWater(const AABB &box) const override;
 };
 
 extern WorldCollision world_collision;

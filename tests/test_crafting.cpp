@@ -318,3 +318,25 @@ TEST_CASE("filling the grid from the inventory, one set at a time") {
     ItemStack small[4];
     CHECK_FALSE(fillGrid(inv, small, 2, pick));     // too big for 2x2
 }
+
+TEST_CASE("a bucket is three iron ingots in a V at a crafting table") {
+    const Recipe &r = recipeFor(ITEM_BUCKET);
+    CHECK(r.result_count == 1);
+    CHECK(needsTable(r));
+
+    const ItemStack IRON(ITEM_IRON_INGOT, 1);
+    ItemStack grid[9];
+    put(grid, 3, "a a" " a " "   ", IRON);
+    REQUIRE(matchGrid(grid, 3) >= 0);
+    CHECK(recipeAt(matchGrid(grid, 3)).result == ITEM_BUCKET);
+    put(grid, 3, "   " "a a" " a ", IRON);   // lower down works too
+    CHECK(recipeAt(matchGrid(grid, 3)).result == ITEM_BUCKET);
+    put(grid, 3, "aaa" "   " "   ", IRON);
+    CHECK(matchGrid(grid, 3) < 0);
+
+    PlayerInventory inv;
+    inv.add(ItemStack(ITEM_IRON_INGOT, 3));
+    CHECK(craftOnce(inv, r) == CraftResult::OK);
+    CHECK(inv.count(ITEM_BUCKET, 0) == 1);
+    CHECK(inv.count(ITEM_IRON_INGOT, 0) == 0);
+}

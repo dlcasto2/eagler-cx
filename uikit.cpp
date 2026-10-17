@@ -1,5 +1,6 @@
 #include "uikit.h"
 
+#include <algorithm>
 #include <cstdio>
 
 #include "blockrenderer.h"
@@ -135,6 +136,22 @@ void darkenRect(TEXTURE &dst, int x, int y, int w, int h)
                 COLOR &p = dst.bitmap[xx + yy * dst.width];
                 p = (p >> 1) & 0x7BEF;
             }
+}
+
+void tintRect(TEXTURE &dst, int x, int y, int w, int h, COLOR c)
+{
+    // Clip once: underwater this covers the whole screen every frame.
+    const int x0 = std::max(x, 0), y0 = std::max(y, 0);
+    const int x1 = std::min(x + w, static_cast<int>(dst.width)), y1 = std::min(y + h, static_cast<int>(dst.height));
+
+    // (p + c) / 2 per channel: halve both without letting bits cross channels.
+    const COLOR half_c = (c >> 1) & 0x7BEF;
+    for(int yy = y0; yy < y1; ++yy)
+    {
+        COLOR *p = dst.bitmap + yy * dst.width + x0;
+        for(int xx = x0; xx < x1; ++xx, ++p)
+            *p = ((*p >> 1) & 0x7BEF) + half_c;
+    }
 }
 
 void lightenRect(TEXTURE &dst, int x, int y, int w, int h)

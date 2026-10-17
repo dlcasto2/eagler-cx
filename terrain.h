@@ -46,7 +46,8 @@ constexpr BLOCK BLOCK_EMERALD_BLOCK = 32;
 constexpr BLOCK BLOCK_ANCIENT_DEBRIS = 33;
 constexpr BLOCK BLOCK_SMITHING_TABLE = 34; //Data: Direction (BLOCK_SIDE)
 constexpr BLOCK BLOCK_CHEST = 35; //Data: Direction (BLOCK_SIDE); contents in block_storage
-constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_CHEST;
+constexpr BLOCK BLOCK_OBSIDIAN = 36; //Water meeting a lava source
+constexpr BLOCK BLOCK_NORMAL_LAST = BLOCK_OBSIDIAN;
 
 //Special blocks begin here
 constexpr int BLOCK_SPECIAL_START = 127;

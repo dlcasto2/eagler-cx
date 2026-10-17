@@ -6,6 +6,7 @@
 #include "world.h"
 #include "chunk.h"
 #include "oregen.h"
+#include "water.h"
 #include "lighting.h"
 #include "fastmath.h"
 #include "blockrenderer.h"
@@ -475,7 +476,7 @@ bool Chunk::intersects(AABB &other)
     return false;
 }
 
-bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFix dz, GLFix &dist, VECTOR3 &pos, AABB::SIDE &side, bool ignore_water)
+bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFix dz, GLFix &dist, VECTOR3 &pos, AABB::SIDE &side, bool hit_water_sources)
 {
     GLFix shortest_dist;
     if(aabb.intersectsRay(rx, ry, rz, dx, dy, dz, shortest_dist) == AABB::NONE)
@@ -504,7 +505,7 @@ bool Chunk::intersectsRay(GLFix rx, GLFix ry, GLFix rz, GLFix dx, GLFix dy, GLFi
 
                 BLOCK_WDATA block = blocks[x][y][z];
 
-                if(block == BLOCK_AIR || (getBLOCK(block) == BLOCK_WATER && ignore_water))
+                if(block == BLOCK_AIR || (isFluid(block) && !(hit_water_sources && isWaterSource(block))))
                     continue;
 
                 AABB test = aabb;
@@ -588,7 +589,7 @@ void Chunk::generate()
                     else
                         blocks[x][y][z] = BLOCK_STONE;
                 }
-                else if(height > 10)
+                else if(!isSandColumn(height))
                 {
                     if(to_surface == 1)
                     {
@@ -602,7 +603,10 @@ void Chunk::generate()
                 else
                     blocks[x][y][z] = BLOCK_SAND;
             }
-            if(trees < max_trees && height_left >= 0 && height_left <= Chunk::SIZE && noise.noise(GLFix(x)/Chunk::SIZE + this->x, GLFix(z)/Chunk::SIZE + this->z, 25) < GLFix(0.3f))
+            // Oceans and lakes: still water from the ground up to sea level.
+            fillSeaColumn(blocks, x, z, this->y, height);
+
+            if(trees < max_trees && isDryLand(height) && height_left >= 0 && height_left <= Chunk::SIZE && noise.noise(GLFix(x)/Chunk::SIZE + this->x, GLFix(z)/Chunk::SIZE + this->z, 25) < GLFix(0.3f))
             {
                 makeTree(x, height_here, z);
                 trees++;

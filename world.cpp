@@ -155,7 +155,7 @@ bool World::intersect(AABB &other) const
     return false;
 }
 
-bool World::intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, VECTOR3 &result, AABB::SIDE &side, GLFix &dist, bool ignore_water) const
+bool World::intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix dz, VECTOR3 &result, AABB::SIDE &side, GLFix &dist, bool hit_water_sources) const
 {
     dist = GLFix::maxValue();
     VECTOR3 pos;
@@ -164,7 +164,7 @@ bool World::intersectsRay(GLFix x, GLFix y, GLFix z, GLFix dx, GLFix dy, GLFix d
         GLFix new_dist;
         AABB::SIDE new_side = AABB::NONE;
 
-        if(c->intersectsRay(x, y, z, dx, dy, dz, new_dist, pos, new_side, ignore_water))
+        if(c->intersectsRay(x, y, z, dx, dy, dz, new_dist, pos, new_side, hit_water_sources))
         {
             if(new_dist > dist)
                 continue;
@@ -345,6 +345,20 @@ bool WorldCollision::intersects(const AABB &box) const
 {
     AABB copy = box;   // World::intersect takes a non-const reference
     return world.intersect(copy);
+}
+
+bool WorldCollision::touchesWater(const AABB &box) const
+{
+    // Every block the box overlaps; a box that only touches a block doesn't count.
+    const int x0 = (box.low_x / BLOCK_SIZE).floor(), x1 = ((box.high_x - GLFix(1)) / BLOCK_SIZE).floor();
+    const int y0 = (box.low_y / BLOCK_SIZE).floor(), y1 = ((box.high_y - GLFix(1)) / BLOCK_SIZE).floor();
+    const int z0 = (box.low_z / BLOCK_SIZE).floor(), z1 = ((box.high_z - GLFix(1)) / BLOCK_SIZE).floor();
+    for(int x = x0; x <= x1; ++x)
+        for(int y = y0; y <= y1; ++y)
+            for(int z = z0; z <= z1; ++z)
+                if(getBLOCK(world.getBlock(x, y, z)) == BLOCK_WATER)
+                    return true;
+    return false;
 }
 
 void World::setBrightnessAll(int level)

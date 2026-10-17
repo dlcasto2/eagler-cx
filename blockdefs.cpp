@@ -38,6 +38,7 @@ bool buildTable()
     def(BLOCK_EMERALD_BLOCK, 500, PICK, 3);
     def(BLOCK_WOOL, 80, NONE, 0);
     def(BLOCK_ANCIENT_DEBRIS, 3000, PICK, 4, SELF, 0, true);   // needs diamond; survives explosions
+    def(BLOCK_OBSIDIAN, 5000, PICK, 4, SELF, 0, true);         // needs diamond; survives explosions
     def(BLOCK_REDSTONE_ORE, 300, PICK, 3, drops(ITEM_REDSTONE_DUST, 4, 5));
     def(BLOCK_PRESSURE_PLATE, 50, PICK, 1);
 
