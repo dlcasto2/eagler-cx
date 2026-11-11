@@ -1,8 +1,13 @@
 Crafti Survival Edition
 =======================
 
-A survival-mode fork of [crafti](https://github.com/Vogtinator/crafti) by Fabian Vogt: 3D Minecraft for TI-Nspire CX calculators running Ndless.
+A survival-mode fork of [crafti](https://github.com/Vogtinator/crafti) by Fabian Vogt: 3D Minecraft for TI-Nspire calculators running Ndless.
 The goal is 1.8.8-style survival play (items, mining, mobs, and difficulty levels) on a calculator.
+
+Runs on both the TI-Nspire CX (colour) and the original Clickpad/Touchpad/CAS models (4-bit
+greyscale screen), on any OS Ndless supports for that hardware - OS 3.9.0.463 included. The
+terrain, UI and item art convert to greyscale automatically on the classic screen; no separate
+build is needed.
 
 > **Status:** survival basics are playable: hold-to-mine with tool tiers, block drops, a day/night cycle,
 > crafting, furnaces, chests, beds, the smithing table, lakes to swim in and scoop with a bucket, and seven biomes.
