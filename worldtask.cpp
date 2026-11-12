@@ -672,7 +672,17 @@ void WorldTask::render()
     // Sky colour follows the time of day
     unsigned sky_r, sky_g, sky_b;
     skyColor(world_state.time_of_day, sky_r, sky_g, sky_b);
-    nglSetColor(static_cast<COLOR>(((sky_r >> 3) << 11) | ((sky_g >> 2) << 5) | (sky_b >> 3)));
+    if(lcd_type() == SCR_320x240_4)
+    {
+        // The classic Nspire's 4bpp screen is blitted from the blue channel
+        // alone, so a hue-accurate sky (e.g. the orange of dusk, blue == low)
+        // would render at the wrong brightness. Use true luminance instead,
+        // packed the same way greyscaleTexture() packs terrain and UI art.
+        const unsigned grey = (sky_r + 2 * sky_g + sky_b) / 4;
+        nglSetColor(static_cast<COLOR>(((grey >> 3) << 11) | ((grey >> 2) << 5) | (grey >> 3)));
+    }
+    else
+        nglSetColor(static_cast<COLOR>(((sky_r >> 3) << 11) | ((sky_g >> 2) << 5) | (sky_b >> 3)));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glPushMatrix();

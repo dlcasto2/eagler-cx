@@ -354,8 +354,12 @@ void drawItemStack(TEXTURE &dst, int x, int y, const ItemStack &s)
         const int left = def.durability > s.meta ? def.durability - s.meta : 0;
         const int len = (13 * left + def.durability / 2) / def.durability;
         const int red = 31 - 31 * left / def.durability, green = 63 * left / def.durability;
+        // Blue tracks remaining durability too: on the classic Nspire, only the
+        // blue channel reaches the 4bpp screen, so without it the bar would be
+        // invisible (black) at every wear level instead of dimming as it wears.
+        const int blue = 31 * left / def.durability;
         fillRect(dst, x + 2, y + 13, 13, 2, 0x0000);
-        fillRect(dst, x + 2, y + 13, len, 1, static_cast<COLOR>((red << 11) | (green << 5)));
+        fillRect(dst, x + 2, y + 13, len, 1, static_cast<COLOR>((red << 11) | (green << 5) | blue));
     }
 
     if(s.count > 1)

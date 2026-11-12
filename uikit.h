@@ -12,8 +12,11 @@ constexpr int SLOT = 18, SLOT_INNER = 16;
 constexpr int TEXT_LINE = 10;   // line height of the pixel font
 
 namespace ui {
+    // TITLE's blue channel is kept non-zero (0x60 -> 0x6C): the classic Nspire's
+    // 4bpp screen is blitted from the blue channel alone, so a gold with
+    // blue == 0 would render as invisible black text instead of gold.
     constexpr COLOR TEXT_WHITE = 0xFFFF, TEXT = 0xE71C, YELLOW = 0xFFF4, GREY_TEXT = 0xA534, DARK_TEXT = 0x4208,
-                    TITLE = 0xFE60;
+                    TITLE = 0xFE6C;
 }
 
 void fillRect(TEXTURE &dst, int x, int y, int w, int h, COLOR c);

@@ -13,6 +13,7 @@
 #include "gameclock.h"
 #include "gamestate.h"
 #include "playerinventory.h"
+#include "mono_art.h"
 
 #include "textures/loading.h"
 
@@ -26,6 +27,7 @@ int main(int argc, char *argv[])
     #endif
 
     nglInit();
+    monoArtInit();
     if(lcd_type() == SCR_320x240_4)
         greyscaleTexture(loading);
     nglSetBuffer(loading.bitmap);
